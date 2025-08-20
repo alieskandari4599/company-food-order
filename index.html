@@ -4,17 +4,19 @@
 <meta charset="UTF-8">
 <title>سفارش غذای شرکتی</title>
 <style>
-body { font-family: Tahoma,sans-serif; background:#f4f4f4; margin:0; padding:0;}
-.container { max-width:700px; margin:50px auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
-h2 { text-align:center; color:#333;}
-input, select, button { width:100%; padding:10px; margin:8px 0; border-radius:5px; border:1px solid #ccc; font-size:16px;}
-button { background-color:#006400; color:white; border:none; cursor:pointer;}
-button:hover { background-color:#004d00;}
+body { font-family: Tahoma,sans-serif; background:#f4f6f9; margin:0; padding:0; color:#333;}
+.container { max-width:900px; margin:40px auto; background:#fff; padding:25px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1);}
+h2 { text-align:center; color:#444; margin-bottom:20px;}
+input, select, button { width:100%; padding:12px; margin:8px 0; border-radius:6px; border:1px solid #ccc; font-size:15px;}
+button { background:linear-gradient(90deg,#4caf50,#388e3c); color:#fff; border:none; cursor:pointer; transition:.3s;}
+button:hover { opacity:0.9;}
 .day-select { margin-bottom:15px;}
-#logo { display:block; margin:0 auto 20px; max-width:200px; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-th { background:#eee; }
+#logo { display:block; margin:0 auto 20px; max-width:200px; border-radius:8px;}
+table { width:100%; border-collapse:collapse; margin-top:20px; font-size:14px;}
+th, td { border:1px solid #ddd; padding:8px; text-align:center;}
+th { background:#f0f0f0;}
+#whoAmI { text-align:center; margin:15px 0; font-weight:bold; color:#222;}
+.logout-btn { background:#c62828; margin-top:10px;}
 </style>
 </head>
 <body>
@@ -28,15 +30,18 @@ th { background:#eee; }
 </div>
 
 <div class="container" id="orderDiv" style="display:none;">
+    <div id="whoAmI"></div>
     <h2>انتخاب غذا</h2>
     <div id="daysContainer"></div>
     <button onclick="submitOrder()">ثبت سفارش</button>
+    <button class="logout-btn" onclick="logout()">خروج</button>
     <p id="orderMsg" style="color:green;"></p>
 </div>
 
 <div class="container" id="adminDiv" style="display:none;">
+    <div id="whoAmI"></div>
     <h2>صفحه مدیر - سفارش‌ها</h2>
-    <label>مرتب‌سازی بر اساس بخش:</label>
+    <label>مرتب‌سازی بر اساس طبقه:</label>
     <select id="sectionFilter" onchange="showAllOrders()">
         <option value="همه">همه</option>
     </select>
@@ -45,7 +50,7 @@ th { background:#eee; }
             <tr>
                 <th>کد ملی</th>
                 <th>نام</th>
-                <th>بخش</th>
+                <th>طبقه</th>
                 <th>شنبه</th>
                 <th>یکشنبه</th>
                 <th>دوشنبه</th>
@@ -55,10 +60,11 @@ th { background:#eee; }
         </thead>
         <tbody></tbody>
     </table>
+    <button class="logout-btn" onclick="logout()">خروج</button>
 </div>
 
 <script>
-// لیست کاربران کامل با بخش فرضی
+// -------------------- لیست کاربران --------------------
 const rawUsers = [
   {"code": "1465316159", "name": "علی اصغرزاده صادق"},
   {"code": "0939825902", "name": "سید علی میرتونی"},
@@ -104,31 +110,86 @@ const rawUsers = [
   {"code": "5669148134", "name": "حقیقت نوروزی"}
 ];
 
-// اختصاص بخش فرضی به کاربران (متناوب)
-const users = rawUsers.map((u,i)=>({ ...u, section: i%2===0 ? "طبقه اول" : "طبقه دوم"}));
+const floorMap = {
+  "1465316159": "طبقه 4",
+  "0939825902": "طبقه 4",
+  "0075102110": "طبقه 4",
+  "1532626142": "طبقه 4",
+  "2710033445": "طبقه 3",
+  "1263594301": "طبقه 3",
+  "0010275975": "طبقه 3",
+  "0014668688": "طبقه 3",
+  "0051385090": "طبقه 3",
+  "1450551394": "طبقه 3",
+  "1263591310": "طبقه 3",
+  "0020090641": "طبقه 3",
+  "0077320980": "طبقه 1",
+  "0082878110": "طبقه 2",
+  "5449975856": "طبقه 2",
+  "0013322214": "طبقه 2",
+  "0076209441": "طبقه 2",
+  "0013227173": "طبقه 2",
+  "0014880751": "طبقه 2",
+  "1360830634": "طبقه 2",
+  "4232135855": "طبقه 2",
+  "2980435430": "طبقه 2",
+  "1465352864": "طبقه 2",
+  "0451327926": "طبقه 3",
+  "0310669081": "طبقه 1",
+  "0084697377": "طبقه 1",
+  "4560132534": "طبقه 1",
+  "2471739113": "طبقه 1",
+  "0071114671": "طبقه 1",
+  "0058084411": "طبقه 1",
+  "2050322747": "طبقه 1",
+  "0018553771": "طبقه 1",
+  "2080284665": "طبقه 1",
+  "0019294638": "طبقه 0",
+  "1742478638": "طبقه 0",
+  "4592243331": "طبقه 0",
+  "0059433876": "طبقه 0",
+  "0025204599": "طبقه 3",
+  "0011911131": "طبقه 3",
+  "0682486401": "طبقه 2",
+  "0023475919": "طبقه 1",
+  "5669148134": "طبقه 2"
+};
 
+// -------------------- داده‌های ثابت --------------------
 const days = ["شنبه","یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه"];
 const meals = ["چلوکباب","ماکارونی","خورشت قیمه","ساندویچ","سالاد و سوپ"];
 
+// -------------------- ورود --------------------
 function login(){
     const code = document.getElementById("userCode").value.trim();
-    const user = users.find(u=>u.code===code);
+    if(code==="admin"){
+        document.getElementById("loginDiv").style.display="none";
+        document.getElementById("adminDiv").style.display="block";
+        document.getElementById("whoAmI").innerText="مدیر سیستم";
+        showAllOrders();
+        return;
+    }
+    const user = rawUsers.find(u=>u.code===code);
     if(user){
+        const section = floorMap[code] || "نامشخص";
         localStorage.setItem("currentUser", code);
         localStorage.setItem("currentUserName", user.name);
-        localStorage.setItem("currentUserSection", user.section);
+        localStorage.setItem("currentUserSection", section);
         document.getElementById("loginDiv").style.display="none";
-        if(code==="admin"){ // اگر کد مدیر باشد
-            document.getElementById("adminDiv").style.display="block";
-            showAllOrders();
-        } else {
-            showOrderPage(user.name);
-        }
+        document.getElementById("orderDiv").style.display="block";
+        document.getElementById("whoAmI").innerText=`${user.name} • ${section}`;
+        showOrderPage(user.name);
     } else {
         document.getElementById("loginMsg").innerText="کد ملی معتبر نیست!";
     }
 }
 
+function logout(){
+    localStorage.clear();
+    location.reload();
+}
+
+// -------------------- صفحه سفارش --------------------
 function showOrderPage(name){
     const container = document.getElementById("daysContainer");
     container.innerHTML=`<p>سلام ${name}! لطفا غذای خود را برای هر روز انتخاب کنید:</p>`;
@@ -141,7 +202,6 @@ function showOrderPage(name){
         </select>`;
         container.appendChild(div);
     });
-    document.getElementById("orderDiv").style.display="block";
 }
 
 function submitOrder(){
@@ -155,19 +215,20 @@ function submitOrder(){
     document.getElementById("orderMsg").innerText="سفارش شما ثبت شد!";
 }
 
-// نمایش سفارش‌ها در صفحه مدیر
+// -------------------- نمایش سفارش‌ها (ادمین) --------------------
 function showAllOrders(){
     const tbody=document.querySelector("#ordersTable tbody");
     tbody.innerHTML="";
     const filter=document.getElementById("sectionFilter").value;
-    users.forEach(u=>{
+    rawUsers.forEach(u=>{
         const data=JSON.parse(localStorage.getItem("order_"+u.code)||"{}");
         if(Object.keys(data).length===0) return;
-        if(filter!=="همه" && data.section!==filter) return;
+        const section=floorMap[u.code] || "نامشخص";
+        if(filter!=="همه" && section!==filter) return;
         tbody.innerHTML+=`<tr>
             <td>${u.code}</td>
             <td>${u.name}</td>
-            <td>${data.section}</td>
+            <td>${section}</td>
             <td>${data["شنبه"]||""}</td>
             <td>${data["یکشنبه"]||""}</td>
             <td>${data["دوشنبه"]||""}</td>
@@ -180,7 +241,7 @@ function showAllOrders(){
 
 function updateSectionFilter(){
     const select=document.getElementById("sectionFilter");
-    const sections=[...new Set(users.map(u=>u.section))];
+    const sections=[...new Set(Object.values(floorMap))];
     sections.forEach(sec=>{
         if(!Array.from(select.options).some(o=>o.value===sec)){
             const opt=document.createElement("option");
