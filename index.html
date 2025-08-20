@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>سفارش غذای شرکتی</title>
+<style>
+body { font-family: Tahoma,sans-serif; background:#f4f4f4; margin:0; padding:0;}
+.container { max-width:700px; margin:50px auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
+h2 { text-align:center; color:#333;}
+input, select, button { width:100%; padding:10px; margin:8px 0; border-radius:5px; border:1px solid #ccc; font-size:16px;}
+button { background-color:#006400; color:white; border:none; cursor:pointer;}
+button:hover { background-color:#004d00;}
+.day-select { margin-bottom:15px;}
+#logo { display:block; margin:0 auto 20px; max-width:200px; }
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+th { background:#eee; }
+</style>
+</head>
+<body>
+
+<div class="container" id="loginDiv">
+    <img id="logo" src="assets/image/7707cbdd-659f-49a6-90d8-231103f6be05.jpg" alt="لوگوی شرکت">
+    <h2>ورود با کد ملی</h2>
+    <input type="text" id="userCode" placeholder="کد ملی">
+    <button onclick="login()">ورود</button>
+    <p id="loginMsg" style="color:red;"></p>
+</div>
+
+<div class="container" id="orderDiv" style="display:none;">
+    <h2>انتخاب غذا</h2>
+    <div id="daysContainer"></div>
+    <button onclick="submitOrder()">ثبت سفارش</button>
+    <p id="orderMsg" style="color:green;"></p>
+</div>
+
+<div class="container" id="adminDiv" style="display:none;">
+    <h2>صفحه مدیر - سفارش‌ها</h2>
+    <label>مرتب‌سازی بر اساس بخش:</label>
+    <select id="sectionFilter" onchange="showAllOrders()">
+        <option value="همه">همه</option>
+    </select>
+    <table id="ordersTable">
+        <thead>
+            <tr>
+                <th>کد ملی</th>
+                <th>نام</th>
+                <th>بخش</th>
+                <th>شنبه</th>
+                <th>یکشنبه</th>
+                <th>دوشنبه</th>
+                <th>سه‌شنبه</th>
+                <th>چهارشنبه</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+// لیست کاربران کامل با بخش فرضی
+const rawUsers = [
+  {"code": "1465316159", "name": "علی اصغرزاده صادق"},
+  {"code": "0939825902", "name": "سید علی میرتونی"},
+  {"code": "0075102110", "name": "محسن اشرف اسلامی"},
+  {"code": "1532626142", "name": "زهرا محمدی حلمسلوئی"},
+  {"code": "2710033445", "name": "مسعود قاسم زاده سیاهکل"},
+  {"code": "1263594301", "name": "مهدی نوروزی خزاقی"},
+  {"code": "0010275975", "name": "لیلا رسولی درآباد"},
+  {"code": "0014668688", "name": "محمدرضا عبدالهی"},
+  {"code": "0051385090", "name": "شاهین فاضل مهر"},
+  {"code": "1450551394", "name": "فاطمه پارسای"},
+  {"code": "1263591310", "name": "مقداد شفقی"},
+  {"code": "0020090641", "name": "فاطمه میرزاخانی"},
+  {"code": "0077320980", "name": "جواد مرادپور"},
+  {"code": "0082878110", "name": "الناز نوروزی"},
+  {"code": "5449975856", "name": "ولی اله غنجی فشکی"},
+  {"code": "0013322214", "name": "زهرا بابایی"},
+  {"code": "0076209441", "name": "محمد پوریانفر"},
+  {"code": "0013227173", "name": "امیرحسین صادق نژاد"},
+  {"code": "0014880751", "name": "حسام فلاحت پیشه"},
+  {"code": "1360830634", "name": "مهرداد صابر قره بابا"},
+  {"code": "4232135855", "name": "محمد صیادی سی سخت"},
+  {"code": "2980435430", "name": "فائزه باقری پور"},
+  {"code": "1465352864", "name": "روشنک محمدیان"},
+  {"code": "0451327926", "name": "لیلا احمدی آورزمان"},
+  {"code": "0310669081", "name": "مرتضی نیکوئی"},
+  {"code": "0084697377", "name": "مرتضی شاه محمدی"},
+  {"code": "4560132534", "name": "پدرام عبدالهی"},
+  {"code": "2471739113", "name": "عاطفه سرمد"},
+  {"code": "0071114671", "name": "عرفانه سادات یزدانشناس"},
+  {"code": "0058084411", "name": "یعقوب رحیمی"},
+  {"code": "2050322747", "name": "علیرضا شکر اله نیا روشن"},
+  {"code": "0018553771", "name": "صدف علی نژاد"},
+  {"code": "2080284665", "name": "طه بالایی"},
+  {"code": "0019294638", "name": "پگاه کریمی"},
+  {"code": "1742478638", "name": "لیلا منیش داوی"},
+  {"code": "4592243331", "name": "رضا داورپناه"},
+  {"code": "0059433876", "name": "داود دلاوری پارسا"},
+  {"code": "0025204599", "name": "علی اسکندری نصفچی"},
+  {"code": "0011911131", "name": "محمد صادق رفیع پویا"},
+  {"code": "0682486401", "name": "کاوه رجب پور مقدم"},
+  {"code": "0023475919", "name": "زهرا فیلسوفیان"},
+  {"code": "5669148134", "name": "حقیقت نوروزی"}
+];
+
+// اختصاص بخش فرضی به کاربران (متناوب)
+const users = rawUsers.map((u,i)=>({ ...u, section: i%2===0 ? "طبقه اول" : "طبقه دوم"}));
+
+const days = ["شنبه","یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه"];
+const meals = ["چلوکباب","ماکارونی","خورشت قیمه","ساندویچ","سالاد و سوپ"];
+
+function login(){
+    const code = document.getElementById("userCode").value.trim();
+    const user = users.find(u=>u.code===code);
+    if(user){
+        localStorage.setItem("currentUser", code);
+        localStorage.setItem("currentUserName", user.name);
+        localStorage.setItem("currentUserSection", user.section);
+        document.getElementById("loginDiv").style.display="none";
+        if(code==="admin"){ // اگر کد مدیر باشد
+            document.getElementById("adminDiv").style.display="block";
+            showAllOrders();
+        } else {
+            showOrderPage(user.name);
+        }
+    } else {
+        document.getElementById("loginMsg").innerText="کد ملی معتبر نیست!";
+    }
+}
+
+function showOrderPage(name){
+    const container = document.getElementById("daysContainer");
+    container.innerHTML=`<p>سلام ${name}! لطفا غذای خود را برای هر روز انتخاب کنید:</p>`;
+    days.forEach(day=>{
+        const div=document.createElement("div");
+        div.className="day-select";
+        div.innerHTML=`<label>${day}</label>
+        <select id="${day}">
+            ${meals.map(meal=>`<option value="${meal}">${meal}</option>`).join('')}
+        </select>`;
+        container.appendChild(div);
+    });
+    document.getElementById("orderDiv").style.display="block";
+}
+
+function submitOrder(){
+    const order={};
+    days.forEach(day=>{
+        order[day]=document.getElementById(day).value;
+    });
+    const user=localStorage.getItem("currentUser");
+    const section=localStorage.getItem("currentUserSection");
+    localStorage.setItem("order_"+user, JSON.stringify({...order, section}));
+    document.getElementById("orderMsg").innerText="سفارش شما ثبت شد!";
+}
+
+// نمایش سفارش‌ها در صفحه مدیر
+function showAllOrders(){
+    const tbody=document.querySelector("#ordersTable tbody");
+    tbody.innerHTML="";
+    const filter=document.getElementById("sectionFilter").value;
+    users.forEach(u=>{
+        const data=JSON.parse(localStorage.getItem("order_"+u.code)||"{}");
+        if(Object.keys(data).length===0) return;
+        if(filter!=="همه" && data.section!==filter) return;
+        tbody.innerHTML+=`<tr>
+            <td>${u.code}</td>
+            <td>${u.name}</td>
+            <td>${data.section}</td>
+            <td>${data["شنبه"]||""}</td>
+            <td>${data["یکشنبه"]||""}</td>
+            <td>${data["دوشنبه"]||""}</td>
+            <td>${data["سه‌شنبه"]||""}</td>
+            <td>${data["چهارشنبه"]||""}</td>
+        </tr>`;
+    });
+    updateSectionFilter();
+}
+
+function updateSectionFilter(){
+    const select=document.getElementById("sectionFilter");
+    const sections=[...new Set(users.map(u=>u.section))];
+    sections.forEach(sec=>{
+        if(!Array.from(select.options).some(o=>o.value===sec)){
+            const opt=document.createElement("option");
+            opt.value=sec;
+            opt.text=sec;
+            select.appendChild(opt);
+        }
+    });
+}
+</script>
+
+</body>
+</html>
