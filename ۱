@@ -1,1 +1,344 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🍽️ سفارش غذای شرکتی</title>
+
+<!-- SheetJS برای خروجی اکسل -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+  :root{
+    --bg:#0f172a; --card:#1e293b; --card-border:#334155;
+    --text:#e6edf6; --muted:#9ca3af; --accent:#22c55e; --accent-strong:#16a34a;
+    --danger:#ef4444; --ok:#34d399; --shadow:0 10px 25px rgba(0,0,0,.3); --radius:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Tahoma,system-ui;background:var(--bg);color:var(--text);line-height:1.7;}
+  header{position:sticky;top:0;z-index:10;backdrop-filter:blur(10px);
+    background:linear-gradient(180deg,rgba(15,23,42,.95),rgba(15,23,42,.75));
+    border-bottom:1px solid rgba(255,255,255,.08);}
+  .nav{max-width:1000px;margin:auto;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+  .brand{font-weight:800;font-size:20px}
+  #whoAmI{color:var(--muted);font-size:14px}
+  .container{max-width:1000px;margin:40px auto;padding:0 20px}
+  .card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:30px;text-align:center}
+  .card img{max-width:140px;margin-bottom:18px}
+  h2{margin:6px 0 20px;font-size:22px}
+  .muted{color:var(--muted);font-size:15px}
+  .field{margin:14px 0}
+  .input,.select,.button{
+    width:100%;padding:14px 16px;font-size:16px;border-radius:14px;
+    border:1px solid var(--card-border);background:#0f172a;
+    color:var(--text);outline:none;transition:all .2s}
+  .select{appearance:none;text-align:center;font-weight:bold;}
+  .input::placeholder{color:#9fb0c9}
+  .button{background:linear-gradient(180deg,var(--accent),var(--accent-strong));border:none;
+    cursor:pointer;font-weight:700;transition:transform .15s}
+  .button:hover{transform:translateY(-2px);filter:brightness(1.05);}
+  .day-select{margin:18px 0}
+  .inline-grid{display:grid;gap:14px;grid-template-columns:150px 1fr 1fr}
+  @media (max-width:800px){.inline-grid{grid-template-columns:1fr}}
+  .badge{padding:12px;border-radius:12px;font-weight:700;text-align:center;
+    background:#0f172a;border:1px solid var(--card-border)}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:14px;overflow:hidden;border-radius:14px}
+  thead th{position:sticky;top:0;z-index:1;background:rgba(255,255,255,.08);backdrop-filter:blur(8px)}
+  th,td{border-bottom:1px solid rgba(255,255,255,.08);padding:10px;text-align:center;font-size:14px}
+  tbody tr:nth-child(odd){background:rgba(255,255,255,.04)} tbody tr:hover{background:rgba(255,255,255,.07)}
+  .toolbar{display:flex;gap:10px;align-items:center;justify-content:center;margin:10px 0 16px}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="brand">🍽️ سفارش غذای شرکتی</div>
+    <div id="whoAmI"></div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- ورود -->
+  <div class="card" id="loginDiv">
+    <img src="assets/WhatsApp Image 2025-08-20 at 20.49.10.jpeg" alt="لوگوی شرکت">
+    <h2>ورود</h2>
+    <p class="muted">کد ملی خود را وارد کنید. </p>
+    <div class="field">
+      <input id="userCode" class="input" type="text"  />
+    </div>
+    <button class="button" onclick="login()">ورود</button>
+    <p id="loginMsg" style="color:#ef4444"></p>
+  </div>
+
+  <!-- انتخاب غذا -->
+  <div class="card" id="orderDiv" style="display:none;">
+    <h2>انتخاب غذا و همراه</h2>
+    <p id="helloText" class="muted"></p>
+    <div id="daysContainer"></div>
+    <button class="button" onclick="submitOrder()">ثبت سفارش</button>
+    <p id="orderMsg" style="color:#34d399"></p>
+  </div>
+
+  <!-- ادمین -->
+  <div class="card" id="adminDiv" style="display:none;">
+    <h2>پنل مدیریت</h2>
+    <p class="muted">برای هر روز یک خوراک، یک کبابی و یک خورشتی تعریف کنید.</p>
+    <div id="menuEditor"></div>
+    <button class="button" onclick="saveWeeklyMenu()">ذخیره منو</button>
+
+    <hr style="margin:24px 0;border-color:rgba(255,255,255,.15)">
+
+    <h2>سفارش‌ها</h2>
+    <div class="toolbar">
+      <label>فیلتر بخش:</label>
+      <select id="sectionFilter" class="select" onchange="showAllOrders()">
+        <option value="همه">همه</option>
+      </select>
+    </div>
+
+    <div class="toolbar">
+      <label>خروجی اکسل روز:</label>
+      <select id="exportDay" class="select" style="max-width:220px">
+        <option value="شنبه">شنبه</option>
+        <option value="یکشنبه">یکشنبه</option>
+        <option value="دوشنبه">دوشنبه</option>
+        <option value="سه‌شنبه">سه‌شنبه</option>
+        <option value="چهارشنبه">چهارشنبه</option>
+      </select>
+      <button class="button" onclick="exportExcelDaily()">📊 خروجی اکسل (روزانه / طبقه‌ای)</button>
+    </div>
+    <div class="hint">فایل اکسل شامل چند شیت است؛ هر شیت = یک طبقه. فقط سفارش‌های روز انتخاب‌شده داخل فایل می‌آید.</div>
+
+    <table id="ordersTable">
+      <thead>
+        <tr>
+          <th>کد ملی</th><th>نام</th><th>بخش</th>
+          <th>شنبه</th><th>یکشنبه</th><th>دوشنبه</th><th>سه‌شنبه</th><th>چهارشنبه</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+/* ==== پرسنل (با طبقه) ==== */
+const users = [
+ {code:"1465316159",name:"علی اصغرزاده صادق",section:"طبقه 4"},
+ {code:"0939825902",name:"سید علی میرتونی",section:"طبقه 4"},
+ {code:"0075102110",name:"محسن اشرف اسلامی",section:"طبقه 4"},
+ {code:"1532626142",name:"زهرا محمدی حلمسلوئی",section:"طبقه 4"},
+ {code:"2710033445",name:"مسعود قاسم زاده سیاهکل",section:"طبقه 3"},
+ {code:"1263594301",name:"مهدی نوروزی خزاقی",section:"طبقه 3"},
+ {code:"0010275975",name:"لیلا رسولی درآباد",section:"طبقه 3"},
+ {code:"0014668688",name:"محمدرضا عبدالهی",section:"طبقه 3"},
+ {code:"0051385090",name:"شاهین فاضل مهر",section:"طبقه 3"},
+ {code:"1450551394",name:"فاطمه پارسای",section:"طبقه 3"},
+ {code:"1263591310",name:"مقداد شفقی",section:"طبقه 3"},
+ {code:"0020090641",name:"فاطمه میرزاخانی",section:"طبقه 3"},
+ {code:"0077320980",name:"جواد مرادپور",section:"طبقه 1"},
+ {code:"0082878110",name:"الناز نوروزی",section:"طبقه 2"},
+ {code:"5449975856",name:"ولی اله غنجی فشکی",section:"طبقه 2"},
+ {code:"0013322214",name:"زهرا بابایی",section:"طبقه 2"},
+ {code:"0076209441",name:"محمد پوریانفر",section:"طبقه 2"},
+ {code:"0013227173",name:"امیرحسین صادق نژاد",section:"طبقه 2"},
+ {code:"0014880751",name:"حسام فلاحت پیشه",section:"طبقه 2"},
+ {code:"1360830634",name:"مهرداد صابر قره بابا",section:"طبقه 2"},
+ {code:"4232135855",name:"محمد صیادی سی سخت",section:"طبقه 2"},
+ {code:"2980435430",name:"فائزه باقری پور",section:"طبقه 2"},
+ {code:"1465352864",name:"روشنک محمدیان",section:"طبقه 2"},
+ {code:"0451327926",name:"لیلا احمدی آورزمان",section:"طبقه 3"},
+ {code:"0310669081",name:"مرتضی نیکوئی",section:"طبقه 1"},
+ {code:"0084697377",name:"مرتضی شاه محمدی",section:"طبقه 1"},
+ {code:"4560132534",name:"پدرام عبدالهی",section:"طبقه 1"},
+ {code:"2471739113",name:"عاطفه سرمد",section:"طبقه 1"},
+ {code:"0071114671",name:"عرفانه سادات یزدانشناس",section:"طبقه 1"},
+ {code:"0058084411",name:"یعقوب رحیمی",section:"طبقه 1"},
+ {code:"2050322747",name:"علیرضا شکر اله نیا روشن",section:"طبقه 1"},
+ {code:"0018553771",name:"صدف علی نژاد",section:"طبقه 1"},
+ {code:"2080284665",name:"طه بالایی",section:"طبقه 1"},
+ {code:"0019294638",name:"پگاه کریمی",section:"طبقه 0"},
+ {code:"1742478638",name:"لیلا منیش داوی",section:"طبقه 0"},
+ {code:"4592243331",name:"رضا داورپناه",section:"طبقه 0"},
+ {code:"0059433876",name:"داود دلاوری پارسا",section:"طبقه 0"},
+ {code:"0025204599",name:"علی اسکندری نصفچی",section:"طبقه 3"},
+ {code:"0011911131",name:"محمد صادق رفیع پویا",section:"طبقه 3"},
+ {code:"0682486401",name:"کاوه رجب پور مقدم",section:"طبقه 2"},
+ {code:"0023475919",name:"زهرا فیلسوفیان",section:"طبقه 1"},
+ {code:"5669148134",name:"حقیقت نوروزی",section:"طبقه 2"},
+];
+
+const days = ["شنبه","یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه"];
+
+/* منوی پیش‌فرض */
+let weeklyMenu = {
+  "شنبه":   {خوراک:"کتلت",کبابی:"چلوکباب",خورشتی:"قورمه‌سبزی"},
+  "یکشنبه": {خوراک:"خوراک مرغ",کبابی:"کباب کوبیده",خورشتی:"قیمه"},
+  "دوشنبه": {خوراک:"جوجه‌چینی",کبابی:"کباب سلطانی",خورشتی:"فسنجون"},
+  "سه‌شنبه":{خوراک:"خوراک سبزیجات",کبابی:"جوجه کباب",خورشتی:"خورش کرفس"},
+  "چهارشنبه":{خوراک:"املت",کبابی:"برگ",خورشتی:"خورش بامیه"}
+};
+let drinks = ["نوشابه","دوغ","سالاد فصل"];
+
+/* ورود */
+function login(){
+  const code = document.getElementById("userCode").value.trim();
+  const user = users.find(u=>u.code===code);
+  if(code==="admin"){
+    document.getElementById("loginDiv").style.display="none";
+    document.getElementById("adminDiv").style.display="block";
+    renderMenuEditor();
+    showAllOrders();
+    document.getElementById("whoAmI").textContent="مدیر سیستم";
+  } else if(user){
+    localStorage.setItem("currentUser",user.code);
+    localStorage.setItem("currentUserName",user.name);
+    localStorage.setItem("currentUserSection",user.section);
+    document.getElementById("loginDiv").style.display="none";
+    document.getElementById("orderDiv").style.display="block";
+    document.getElementById("helloText").textContent="سلام "+user.name+" ("+user.section+")";
+    renderOrderForm();
+    document.getElementById("whoAmI").textContent=user.name+" • "+user.section;
+  } else {
+    document.getElementById("loginMsg").innerText="کد ملی معتبر نیست!";
+  }
+}
+
+/* فرم سفارش */
+function renderOrderForm(){
+  const c = document.getElementById("daysContainer"); c.innerHTML="";
+  days.forEach(day=>{
+    const d = weeklyMenu[day];
+    const wrap = document.createElement("div");
+    wrap.className="day-select";
+    wrap.innerHTML=`
+      <div class="inline-grid">
+        <div class="badge">${day}</div>
+        <select id="meal_${day}" class="select">
+          <option value="${d.خوراک}">${d.خوراک} (خوراک)</option>
+          <option value="${d.کبابی}">${d.کبابی} (کبابی)</option>
+          <option value="${d.خورشتی}">${d.خورشتی} (خورشتی)</option>
+        </select>
+        <select id="drink_${day}" class="select">
+          ${drinks.map(dr=>`<option value="${dr}">${dr}</option>`).join("")}
+        </select>
+      </div>`;
+    c.appendChild(wrap);
+  });
+}
+
+/* ذخیره سفارش */
+function submitOrder(){
+  const order = {};
+  days.forEach(day=>{
+    order[day] = {
+      meal: document.getElementById("meal_"+day).value,
+      drink: document.getElementById("drink_"+day).value
+    };
+  });
+  const user = localStorage.getItem("currentUser");
+  const section = localStorage.getItem("currentUserSection");
+  localStorage.setItem("order_"+user, JSON.stringify({...order, section}));
+  document.getElementById("orderMsg").innerText = "سفارش شما ثبت شد!";
+}
+
+/* پنل مدیر: ادیت منو */
+function renderMenuEditor(){
+  const c = document.getElementById("menuEditor"); c.innerHTML="";
+  days.forEach(day=>{
+    const d = weeklyMenu[day];
+    c.innerHTML += `
+      <div class="day-select" style="text-align:right">
+        <b>${day}</b><br>
+        <div class="field"><label>خوراک:</label><input id="edit_${day}_خوراک" class="input" value="${d.خوراک}"></div>
+        <div class="field"><label>کبابی:</label><input id="edit_${day}_کبابی" class="input" value="${d.کبابی}"></div>
+        <div class="field"><label>خورشتی:</label><input id="edit_${day}_خورشتی" class="input" value="${d.خورشتی}"></div>
+      </div>
+      <hr style="border-color:rgba(255,255,255,.12)">`;
+  });
+}
+
+/* ذخیره منو */
+function saveWeeklyMenu(){
+  days.forEach(day=>{
+    weeklyMenu[day] = {
+      خوراک:  document.getElementById("edit_"+day+"_خوراک").value || weeklyMenu[day].خوراک,
+      کبابی:  document.getElementById("edit_"+day+"_کبابی").value || weeklyMenu[day].کبابی,
+      خورشتی:document.getElementById("edit_"+day+"_خورشتی").value || weeklyMenu[day].خورشتی
+    };
+  });
+  alert("منو ذخیره شد!");
+}
+
+/* نمایش سفارش‌ها */
+function showAllOrders(){
+  const tbody = document.querySelector("#ordersTable tbody"); tbody.innerHTML="";
+  const filter = document.getElementById("sectionFilter").value;
+
+  users.forEach(u=>{
+    const data = JSON.parse(localStorage.getItem("order_"+u.code)||"{}");
+    if(Object.keys(data).length===0) return;
+    if(filter!=="همه" && data.section!==filter) return;
+
+    const tds = days.map(d=>`<td>${data[d] ? (data[d].meal+" + "+data[d].drink) : ""}</td>`).join("");
+    tbody.insertAdjacentHTML("beforeend",`
+      <tr>
+        <td>${u.code}</td><td>${u.name}</td><td>${data.section||""}</td>
+        ${tds}
+      </tr>
+    `);
+  });
+
+  // پر کردن فیلتر بخش‌ها
+  const select = document.getElementById("sectionFilter");
+  const sections = [...new Set(users.map(u=>u.section))];
+  sections.forEach(sec=>{
+    if(![...select.options].some(o=>o.value===sec)){
+      const opt = document.createElement("option");
+      opt.value=sec; opt.text=sec; select.appendChild(opt);
+    }
+  });
+}
+
+/* خروجی اکسل روزانه بر اساس طبقه */
+function exportExcelDaily(){
+  const day = document.getElementById("exportDay").value; // روز انتخاب‌شده
+  const wb  = XLSX.utils.book_new();
+
+  // همه طبقات موجود
+  const sections = [...new Set(users.map(u=>u.section))];
+
+  sections.forEach(sec=>{
+    // هدر
+    const rows = [["کد ملی","نام","بخش", day]];
+
+    // فقط کارمندهای همین طبقه
+    users.filter(u=>u.section===sec).forEach(u=>{
+      const data = JSON.parse(localStorage.getItem("order_"+u.code)||"{}");
+      if(Object.keys(data).length===0) return; // سفارش نداده
+
+      const cell = data[day];
+      rows.push([
+        u.code,
+        u.name,
+        data.section || "",
+        cell ? (cell.meal + " + " + cell.drink) : ""
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, sec);
+  });
+
+  const safeDay = day.replace("‌","").replace(" ","");
+  XLSX.writeFile(wb, `orders_${safeDay}.xlsx`);
+}
+</script>
+
+</body>
+</html>
+
 
