@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title></title>
+<title>سفارش غذای شرکتی</title>
 <style>
   :root{
     --bg:#0f172a; --card:rgba(255,255,255,.08); --card-border:rgba(255,255,255,.18);
@@ -38,20 +38,27 @@
   .inline-grid{display:grid;gap:14px;grid-template-columns:150px 1fr 1fr 1fr}
   @media (max-width:800px){.inline-grid{grid-template-columns:1fr}}
   .badge{padding:12px;border-radius:12px;font-weight:700;text-align:center;
-    background:rgba(255,255,255,.06);border:1px solid var(--card-border)}
+    border:1px solid var(--card-border);color:#fff}
   table{width:100%;border-collapse:separate;border-spacing:0;margin-top:14px;overflow:hidden;border-radius:14px}
   thead th{position:sticky;top:0;z-index:1;background:rgba(255,255,255,.08);backdrop-filter:blur(8px)}
   th,td{border-bottom:1px solid rgba(255,255,255,.08);padding:10px;text-align:center;font-size:14px}
   tbody tr:nth-child(odd){background:rgba(255,255,255,.04)} tbody tr:hover{background:rgba(255,255,255,.07)}
   .chip{display:inline-block;margin:4px;padding:6px 12px;border-radius:999px;
     background:rgba(255,255,255,.08);border:1px solid var(--card-border);font-size:13px}
+
+  /* 🎨 رنگ برای روزهای هفته */
+  .badge[data-day="شنبه"]{background:#ef4444;}
+  .badge[data-day="یکشنبه"]{background:#f59e0b;}
+  .badge[data-day="دوشنبه"]{background:#10b981;}
+  .badge[data-day="سه‌شنبه"]{background:#3b82f6;}
+  .badge[data-day="چهارشنبه"]{background:#8b5cf6;}
 </style>
 </head>
 <body>
 
 <header>
   <div class="nav">
-    <div class="brand">🍽️ </div>
+    <div class="brand">🍽️ سفارش غذای شرکتی</div>
     <div id="whoAmI"></div>
   </div>
 </header>
@@ -59,11 +66,11 @@
 <div class="container">
   <!-- ورود -->
   <div class="card" id="loginDiv">
-    <img src="assets/WhatsApp Image 2025-08-20 at 20.49.10.jpeg" alt="لوگوی شرکت">
+    <img src="assets/logo.png" alt="لوگوی شرکت">
     <h2>ورود</h2>
-    <p class="muted">کد ملی خود را وارد کنید. </p>
+    <p class="muted">کد ملی خود را وارد کنید. (مدیر = <b>admin</b>)</p>
     <div class="field">
-      <input id="userCode" class="input" type="text"  />
+      <input id="userCode" class="input" type="text" placeholder="کد ملی یا admin" />
     </div>
     <button class="button" onclick="login()">ورود</button>
     <p id="loginMsg" style="color:red"></p>
@@ -148,7 +155,10 @@ const users = [
  {code:"0682486401",name:"کاوه رجب پور مقدم",section:"طبقه 2"},
  {code:"0023475919",name:"زهرا فیلسوفیان",section:"طبقه 1"},
  {code:"5669148134",name:"حقیقت نوروزی",section:"طبقه 2"},
+   {code:"0020090641",name:"فاطمه میرزاخانی",section:"طبقه 3"},
 ];
+
+/* روزهای هفته */
 const days = ["شنبه","یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه"];
 
 /* منوی پیش‌فرض */
@@ -205,7 +215,7 @@ function renderOrderForm(){
     wrap.className="day-select";
     wrap.innerHTML=`
       <div class="inline-grid">
-        <div class="badge">${day}</div>
+        <div class="badge" data-day="${day}">${day}</div>
         <select id="meal_${day}" class="select">
           <option value="${d.خوراک}">${d.خوراک} (خوراک)</option>
           <option value="${d.کبابی}">${d.کبابی} (کبابی)</option>
@@ -265,20 +275,4 @@ function showAllOrders(){
     if(Object.keys(data).length===0)return;
     if(filter!=="همه" && data.section!==filter)return;
     const tds=days.map(d=>`<td>${data[d]?data[d].meal+" + "+data[d].drink:""}</td>`).join("");
-    tbody.innerHTML+=`<tr><td>${u.code}</td><td>${u.name}</td><td>${data.section||""}</td>${tds}</tr>`;
-  });
-  updateSectionFilter();
-}
-function updateSectionFilter(){
-  const select=document.getElementById("sectionFilter");
-  const sections=[...new Set(users.map(u=>u.section))];
-  sections.forEach(sec=>{
-    if(!Array.from(select.options).some(o=>o.value===sec)){
-      const opt=document.createElement("option");opt.value=sec;opt.text=sec;select.appendChild(opt);
-    }
-  });
-}
-</script>
-
-</body>
-</html>
+    tbody.innerHTML+=`<tr><td>${u.code}</td><
