@@ -1,41 +1,56 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🍽️ سفارش غذای شرکت</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>سفارش غذای شرکت</title>
 <style>
-:root{--bg:#0f172a;--card:rgba(255,255,255,.08);--card-border:rgba(255,255,255,.18);
---text:#e6edf6;--muted:#b6c2d9;--accent:#22c55e;--accent-strong:#16a34a;--danger:#ef4444;
---shadow:0 10px 30px rgba(0,0,0,.25);--radius:18px;}
-*{box-sizing:border-box}
-body{margin:0;font-family:Tahoma,system-ui;background:var(--bg);color:var(--text);line-height:1.7;}
-header{position:sticky;top:0;z-index:10;backdrop-filter:blur(10px);
-background:rgba(15,23,42,.9);border-bottom:1px solid rgba(255,255,255,.08);}
-.nav{max-width:1100px;margin:auto;padding:16px;display:flex;justify-content:space-between;align-items:center}
-.brand{font-weight:800;font-size:20px}
-#whoAmI{color:var(--muted);font-size:14px}
-.container{max-width:1100px;margin:28px auto;padding:0 18px}
-.card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);
-box-shadow:var(--shadow);padding:24px;margin-bottom:20px;text-align:center}
-.input,.select,.button{width:100%;padding:12px 14px;font-size:16px;border-radius:12px;
-border:1px solid var(--card-border);background:rgba(255,255,255,.07);color:var(--text);}
-.button{cursor:pointer;font-weight:800;background:linear-gradient(180deg,var(--accent),var(--accent-strong));border:none}
-.button:hover{filter:brightness(1.05)}
-.danger{background:linear-gradient(180deg,var(--danger),#b91c1c)!important}
-.grid-day{display:grid;gap:12px;grid-template-columns:180px 1fr 1fr;margin-top:12px}
-.badge{padding:12px;border-radius:12px;font-weight:800;text-align:center;border:1px solid var(--card-border)}
-.badge.off{background:#64748b;text-decoration:line-through}
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th,td{border:1px solid rgba(255,255,255,.12);padding:6px;text-align:center;font-size:12px}
-thead{background:rgba(255,255,255,.1)}
-.topnote{font-size:13px;color:#93c5fd;margin:6px 0}
-.row{display:grid;gap:12px}
-.two{grid-template-columns:1fr 1fr}
-@media (max-width:900px){.grid-day{grid-template-columns:1fr}}
+  :root{
+    --bg:#0f172a; --card:rgba(255,255,255,.08); --card-border:rgba(255,255,255,.18);
+    --text:#e6edf6; --muted:#b6c2d9; --accent:#22c55e; --accent-strong:#16a34a;
+    --danger:#ef4444; --ok:#34d399; --shadow:0 10px 30px rgba(0,0,0,.25); --radius:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Tahoma,system-ui;background:var(--bg);color:var(--text);line-height:1.7;}
+  header{position:sticky;top:0;z-index:10;backdrop-filter:blur(10px);
+    background:linear-gradient(180deg,rgba(15,23,42,.95),rgba(15,23,42,.75));
+    border-bottom:1px solid rgba(255,255,255,.08);}
+  .nav{max-width:1100px;margin:auto;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+  .brand{font-weight:800;font-size:20px}
+  #whoAmI{color:var(--muted);font-size:14px}
+  .container{max-width:1100px;margin:28px auto;padding:0 18px}
+  .card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:20px;text-align:center}
+  h2{margin:6px 0 16px}
+  .muted{color:var(--muted)}
+  .input,.select,.button{
+    width:100%;padding:12px 14px;font-size:16px;border-radius:12px;border:1px solid var(--card-border);
+    background:rgba(255,255,255,.07);color:var(--text);outline:none
+  }
+  .button{cursor:pointer;font-weight:800;background:linear-gradient(180deg,var(--accent),var(--accent-strong));border:none}
+  .button:hover{filter:brightness(1.05)}
+  .danger{background:linear-gradient(180deg,var(--danger),#b91c1c)!important}
+  .row{display:grid;gap:12px}
+  .grid-day{display:grid;gap:12px;grid-template-columns:260px 1fr 1fr}
+  @media (max-width:820px){.grid-day{grid-template-columns:1fr}}
+  .badge{
+    padding:12px;border-radius:12px;font-weight:800;text-align:center;color:#fff;border:1px solid var(--card-border)
+  }
+  .badge[data-wd="شنبه"]{background:#ef4444}
+  .badge[data-wd="یکشنبه"]{background:#f59e0b}
+  .badge[data-wd="دوشنبه"]{background:#10b981}
+  .badge[data-wd="سه‌شنبه"]{background:#3b82f6}
+  .badge[data-wd="چهارشنبه"]{background:#8b5cf6}
+  .badge.off{background:#64748b;text-decoration:line-through}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{border:1px solid rgba(255,255,255,.12);padding:8px;text-align:center;font-size:13px}
+  thead{background:rgba(255,255,255,.1)}
+  tbody tr:nth-child(odd){background:rgba(255,255,255,.04)}
+  .topnote{font-size:13px;color:#93c5fd;margin-top:6px}
+  .okdot{color:#22c55e;font-weight:900;margin-right:6px}
 </style>
 </head>
 <body>
+
 <header>
   <div class="nav">
     <div class="brand">🍽️ سفارش غذای شرکت</div>
@@ -49,44 +64,51 @@ thead{background:rgba(255,255,255,.1)}
   <div class="card" id="loginDiv">
     <h2>ورود</h2>
     <p class="muted">کد ملی خود را وارد کنید. </p>
-    <div class="row two">
-      <input id="userCode" class="input" >
+    <div class="row">
+      <input id="userCode" class="input"  />
       <button class="button" onclick="login()">ورود</button>
+      <p id="loginMsg" style="color:#ff6b6b"></p>
     </div>
-    <p id="loginMsg" style="color:#ff6b6b"></p>
   </div>
 
-  <!-- سفارش -->
+  <!-- انتخاب غذا (تمام روزهای بازه) -->
   <div class="card" id="orderDiv" style="display:none;">
-    <h2>انتخاب غذا و کنارغذا (از روی menu.json)</h2>
+    <h2 id="rangeTitle">انتخاب غذا و کنارغذا</h2>
     <p id="helloText" class="muted"></p>
-    <div id="holidayBar" style="display:none"></div>
-    <div id="weeklyContainer"></div>
-    <div class="row two" style="margin-top:12px">
+    <div id="holidayBar" class="topnote" style="display:none"></div>
+
+    <div id="daysContainer"></div>
+
+    <div class="row" style="margin-top:12px;grid-template-columns:1fr 1fr">
       <button class="button" onclick="submitOrder()">ثبت سفارش</button>
       <button class="button danger" onclick="logout()">بازگشت</button>
     </div>
     <p id="orderMsg" style="color:#34d399"></p>
   </div>
 
-  <!-- مدیر -->
+  <!-- پنل مدیر -->
   <div class="card" id="adminDiv" style="display:none;">
     <h2>پنل مدیر</h2>
-    <div class="row two" style="margin-bottom:8px">
-      <button class="button" onclick="exportWeekCSV()">📥 خروجی CSV (کل بازه)</button>
+    <div class="row" style="grid-template-columns:1fr 1fr">
+      <button class="button" onclick="exportWeekCSV()">📥 CSV هفتگی (کل جدول)</button>
       <button class="button" onclick="exportDailyByFloorCSV()">📥 CSV روزانه به تفکیک طبقه</button>
     </div>
-    <div class="row two">
+    <div class="row" style="grid-template-columns:1fr 1fr; margin-top:10px">
       <div>
         <label class="muted">فیلتر بخش</label>
-        <select id="sectionFilter" class="select" onchange="renderAdmin()">
+        <select id="sectionFilter" class="select" onchange="renderOrdersTable()">
           <option value="همه">همه</option>
         </select>
       </div>
-      <div id="rangeNote" class="topnote"></div>
+      <div class="topnote" id="rangeNote"></div>
     </div>
     <table id="ordersTable">
-      <thead><tr id="headRow"></tr></thead>
+      <thead>
+        <tr>
+          <th>کد ملی</th><th>نام</th><th>بخش</th>
+          <th>شنبه</th><th>یکشنبه</th><th>دوشنبه</th><th>سه‌شنبه</th><th>چهارشنبه</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
     <div class="row" style="margin-top:12px">
@@ -96,7 +118,7 @@ thead{background:rgba(255,255,255,.1)}
 </div>
 
 <script>
-// ------------------ پرسنل (لیست کامل) ------------------
+// ===== کارکنان (کامل) =====
 const users = [
  {"code":"1465316159","name":"علی اصغرزاده صادق","section":"طبقه 4"},
  {"code":"0939825902","name":"سید علی میرتونی","section":"طبقه 4"},
@@ -141,15 +163,25 @@ const users = [
  {"code":"0023475919","name":"زهرا فیلسوفیان","section":"طبقه 1"},
  {"code":"5669148134","name":"حقیقت نوروزی","section":"طبقه 2"}
 ];
-// ------------------ داده‌های منو از menu.json ------------------
-let menuDays = [];   // [{jdate, weekday, off?, menu:{خوراک,کبابی,خورشتی}}]
-let sides = [];      // ["نوشابه",...]
-// ------------------ ورود/خروج ------------------
+
+// ===== وضعیت بازه و منو =====
+let MENU = null;      // کل menu.json
+let ACTIVE_DAYS = []; // فقط روزهای کاری داخل بازه (بدون تعطیل)
+let SIDES = [];       // کنارغذا
+const WD_ORDER = ["شنبه","یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه"];
+
+// ===== لاگین/خروج =====
 function login(){
   const code = document.getElementById('userCode').value.trim();
-  if(code==="admin"){ return showAdmin(); }
+  if(code === 'admin'){
+    document.getElementById('loginDiv').style.display='none';
+    document.getElementById('adminDiv').style.display='block';
+    document.getElementById('whoAmI').textContent='مدیر سیستم';
+    populateSectionFilter(); renderOrdersTable();
+    return;
+  }
   const u = users.find(x=>x.code===code);
-  if(!u){ document.getElementById('loginMsg').textContent="کد ملی معتبر نیست!"; return; }
+  if(!u){ document.getElementById('loginMsg').textContent='کد ملی معتبر نیست!'; return; }
   localStorage.setItem('currentUser',u.code);
   localStorage.setItem('currentUserName',u.name);
   localStorage.setItem('currentUserSection',u.section);
@@ -157,7 +189,7 @@ function login(){
   document.getElementById('orderDiv').style.display='block';
   document.getElementById('helloText').textContent=`سلام ${u.name} (${u.section})`;
   document.getElementById('whoAmI').textContent=`${u.name} • ${u.section}`;
-  renderForm();
+  renderDaysForm();
 }
 function logout(){
   document.getElementById('orderDiv').style.display='none';
@@ -165,151 +197,148 @@ function logout(){
   document.getElementById('loginDiv').style.display='block';
   document.getElementById('whoAmI').textContent='';
 }
-// ------------------ فرم انتخاب بر اساس menuDays ------------------
-function renderForm(){
-  const box = document.getElementById('weeklyContainer'); box.innerHTML='';
+
+// ===== ساخت فرمِ همه روزها از menu.json =====
+function renderDaysForm(){
+  const box = document.getElementById('daysContainer');
   const holBar = document.getElementById('holidayBar');
-  const offs = menuDays.filter(d=>d.off);
+  box.innerHTML='';
+
+  // نوار تعطیلی‌ها
+  const offs = (MENU.days||[]).filter(d=>d.off);
   if(offs.length){
     holBar.style.display='block';
-    holBar.innerHTML = `<div class="muted">تعطیلی‌ها: ${
+    holBar.innerHTML = `<span class="okdot">■</span> تعطیلی‌ها: ${
       offs.map(o=>`${o.jdate} (${o.weekday})`).join(' ، ')
-    }</div>`;
+    }`;
   } else holBar.style.display='none';
 
-  const sorted = [...menuDays].sort((a,b)=>a.jdate.localeCompare(b.jdate));
-  sorted.forEach(d=>{
-    const disable = d.off ? 'disabled' : '';
-    const menu = d.menu||{};
+  // ردیفِ هر تاریخ کاری
+  ACTIVE_DAYS.forEach((d, idx)=>{
+    const options = [
+      d.menu["خوراک"] ? `<option value="${d.menu["خوراک"]}">${d.menu["خوراک"]} (خوراک)</option>` : "",
+      d.menu["کبابی"] ? `<option value="${d.menu["کبابی"]}">${d.menu["کبابی"]} (کبابی)</option>` : "",
+      d.menu["خورشتی"] ? `<option value="${d.menu["خورشتی"]}">${d.menu["خورشتی"]} (خورشتی)</option>` : ""
+    ].join("");
+
     box.insertAdjacentHTML('beforeend', `
       <div class="grid-day">
-        <div class="badge ${d.off?'off':''}">${d.jdate} — ${d.weekday}</div>
-        <select id="meal_${d.jdate}" class="select" ${disable}>
-          ${d.off?`<option value="">— تعطیل —</option>`:`
-            <option value="${menu.خوراک||''}">${menu.خوراک||''} (خوراک)</option>
-            <option value="${menu.کبابی||''}">${menu.کبابی||''} (کبابی)</option>
-            <option value="${menu.خورشتی||''}">${menu.خورشتی||''} (خورشتی)</option>
-          `}
-        </select>
-        <select id="side_${d.jdate}" class="select" ${disable}>
-          ${d.off?`<option value="">—</option>`: (sides||[]).map(s=>`<option value="${s}">${s}</option>`).join('')}
+        <div class="badge" data-wd="${d.weekday}">${d.jdate} (${d.weekday})</div>
+        <select id="meal_${idx}" class="select">${options}</select>
+        <select id="side_${idx}" class="select">
+          ${SIDES.map(s=>`<option value="${s}">${s}</option>`).join('')}
         </select>
       </div>
     `);
   });
 }
-// ------------------ ثبت سفارش (بر اساس تاریخ) ------------------
+
+// ===== ثبت سفارش کاربر (برای تک‌تک تاریخ‌ها) =====
 function submitOrder(){
   const code = localStorage.getItem('currentUser');
   const section = localStorage.getItem('currentUserSection');
   if(!code){ alert('ابتدا وارد شوید.'); return; }
 
-  const orderByDate = {}; // {"1404/06/08":{meal,side,weekday}}
-  menuDays.forEach(d=>{
-    if(d.off) return;
-    const m = document.getElementById(`meal_${d.jdate}`);
-    const s = document.getElementById(`side_${d.jdate}`);
-    if(!m || !s) return;
-    orderByDate[d.jdate] = { meal: m.value||"", side: s.value||"", weekday: d.weekday };
+  const order = { section, range: MENU.range, days: [] };
+  ACTIVE_DAYS.forEach((d, idx)=>{
+    const meal = document.getElementById(`meal_${idx}`).value;
+    const side = document.getElementById(`side_${idx}`).value;
+    order.days.push({ jdate:d.jdate, weekday:d.weekday, meal, side });
   });
-  localStorage.setItem(`order_${code}`, JSON.stringify({ section, byDate: orderByDate }));
+
+  localStorage.setItem(`order_${code}`, JSON.stringify(order));
   document.getElementById('orderMsg').textContent='سفارش ثبت شد ✅';
 }
-// ------------------ مدیر: جدول تاریخ‌محور + فیلتر بخش ------------------
-function showAdmin(){
-  document.getElementById('loginDiv').style.display='none';
-  document.getElementById('adminDiv').style.display='block';
-  document.getElementById('whoAmI').textContent='مدیر سیستم';
-  // پرکردن فیلتر بخش
-  const sel=document.getElementById('sectionFilter');
-  const uniq=[...new Set(users.map(u=>u.section))];
-  uniq.forEach(sec=>{
-    const o=document.createElement('option'); o.value=sec; o.textContent=sec; sel.appendChild(o);
+
+// ===== پنل مدیر: جدول و خروجی‌ها =====
+function populateSectionFilter(){
+  const sel = document.getElementById('sectionFilter');
+  const secs = [...new Set(users.map(u=>u.section))];
+  secs.forEach(s=>{
+    const o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o);
   });
-  renderAdmin();
 }
-function renderAdmin(){
-  const head=document.getElementById('headRow'); head.innerHTML='';
+function renderOrdersTable(){
   const tbody=document.querySelector('#ordersTable tbody'); tbody.innerHTML='';
   const filter=document.getElementById('sectionFilter').value;
 
-  const sorted=[...menuDays].sort((a,b)=>a.jdate.localeCompare(b.jdate));
-  // سربرگ
-  head.insertAdjacentHTML('beforeend','<th>کد</th><th>نام</th><th>بخش</th>');
-  sorted.forEach(d=> head.insertAdjacentHTML('beforeend', `<th>${d.jdate}${d.off?' (تعطیل)':''}</th>`));
-  // بازه یادداشت
-  if(sorted.length){
-    const first=sorted[0].jdate, last=sorted[sorted.length-1].jdate;
-    document.getElementById('rangeNote').textContent=`بازه: ${first} تا ${last}`;
-  } else document.getElementById('rangeNote').textContent='بازه‌ای در menu.json نیست';
+  users.forEach(u=>{
+    const data = JSON.parse(localStorage.getItem(`order_${u.code}`)||'null');
+    if(!data || !data.days) return;
+    if(filter!=='همه' && (data.section||u.section)!==filter) return;
 
-  users.forEach(u=>{
-    if(u.code==="admin")return;
-    if(filter!=='همه' && u.section!==filter) return;
-    const data = JSON.parse(localStorage.getItem(`order_${u.code}`)||'{}');
-    const byDate = data.byDate || {};
-    let row = `<tr><td>${u.code}</td><td>${u.name}</td><td>${u.section}</td>`;
-    sorted.forEach(d=>{
-      const rec = byDate[d.jdate];
-      row += `<td>${rec? (rec.meal + " + " + rec.side) : ""}</td>`;
-    });
-    row += `</tr>`;
-    tbody.insertAdjacentHTML('beforeend', row);
+    // خلاصهٔ هفتگیِ آخرین سفارش فرد (به ترتیب شنبه..چهارشنبه)
+    const byWd = {};
+    data.days.forEach(d=>{ byWd[d.weekday] = `${d.meal} + ${d.side}`; });
+    const tds = WD_ORDER.map(wd=>`<td>${byWd[wd]||''}</td>`).join('');
+
+    tbody.insertAdjacentHTML('beforeend', `<tr>
+      <td>${u.code}</td><td>${u.name}</td><td>${data.section||u.section||''}</td>${tds}
+    </tr>`);
   });
 }
-// ------------------ خروجی CSV ------------------
+
+// CSV هفتگی (خلاصه بر اساس شنبه..چهارشنبه)
 function exportWeekCSV(){
-  const sorted=[...menuDays].sort((a,b)=>a.jdate.localeCompare(b.jdate));
-  let csv = "کد,نام,بخش,"+ sorted.map(d=>d.jdate).join(",") + "\n";
+  let csv = "کد ملی,نام,بخش,"+WD_ORDER.join(",")+"\n";
   users.forEach(u=>{
-    if(u.code==="admin")return;
-    const data=JSON.parse(localStorage.getItem(`order_${u.code}`)||'{}');
-    const byDate=data.byDate||{};
-    const row=[u.code,u.name,u.section];
-    sorted.forEach(d=> row.push(byDate[d.jdate]? (byDate[d.jdate].meal + " + " + byDate[d.jdate].side) : ""));
-    csv += row.join(",") + "\n";
+    const data=JSON.parse(localStorage.getItem(`order_${u.code}`)||'null');
+    if(!data || !data.days) return;
+    const byWd={}; data.days.forEach(d=>{ byWd[d.weekday]=`${d.meal} + ${d.side}`; });
+    csv += [u.code,u.name,data.section||u.section||'', ...WD_ORDER.map(w=>byWd[w]||'')].join(",")+"\n";
   });
-  downloadCSV(csv,"orders_full_range.csv");
+  downloadCSV(csv, "orders_week.csv");
 }
+
+// CSV روزانه به تفکیک طبقه (برای هر روز از ACTIVE_DAYS یک فایل)
 function exportDailyByFloorCSV(){
-  const sorted=[...menuDays].sort((a,b)=>a.jdate.localeCompare(b.jdate));
-  sorted.forEach(d=>{
-    if(d.off) return; // برای تعطیل خروجی نمی‌سازیم
-    let blocks=[];
-    const floors=[...new Set(users.map(u=>u.section))];
+  ACTIVE_DAYS.forEach(d=>{
+    const dayKey = d.jdate;
+    const floors = [...new Set(users.map(u=>u.section))];
+    let any=false, blocks=[];
+
     floors.forEach(f=>{
-      let block = `تاریخ: ${d.jdate}  |  طبقه: ${f}\nکد,نام,سفارش\n`;
+      let block = `تاریخ: ${dayKey} (${d.weekday}) - ${f}\nکد ملی,نام,سفارش\n`;
       users.forEach(u=>{
-        if(u.code==="admin"||u.section!==f) return;
-        const data=JSON.parse(localStorage.getItem(`order_${u.code}`)||'{}');
-        const byDate=data.byDate||{};
-        const rec=byDate[d.jdate];
-        block += `${u.code},${u.name},${rec? (rec.meal+" + "+rec.side) : ""}\n`;
+        const data=JSON.parse(localStorage.getItem(`order_${u.code}`)||'null');
+        if(!data || !data.days) return;
+        if(u.section!==f) return;
+        const rec = data.days.find(x=>x.jdate===dayKey);
+        block += `${u.code},${u.name},${rec?`${rec.meal} + ${rec.side}`:''}\n`;
+        any = true;
       });
       blocks.push(block);
     });
-    downloadCSV("\uFEFF"+blocks.join("\n"), `orders_${d.jdate}_by_floor.csv`);
+
+    if(any) downloadCSV("\uFEFF"+blocks.join("\n"), `orders_${dayKey}_by_floor.csv`);
   });
 }
 function downloadCSV(text, filename){
   const blob = new Blob([text], {type:"text/csv;charset=utf-8"});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),0);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=filename; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),0);
 }
-// ------------------ بارگذاری منو ------------------
+
+// ===== بارگذاری منو از menu.json =====
 async function loadMenu(){
   try{
     const res = await fetch('./menu.json?v=' + Date.now());
-    const data = await res.json();
-    // مرتب‌سازی و نمایش تعطیلی‌ها
-    menuDays = (data.days||[]).sort((a,b)=>a.jdate.localeCompare(b.jdate));
-    sides = data.sides || ["نوشابه","دوغ","ماست","سالاد فصل"];
-    // نوت وضعیت
-    if(menuDays.length){
-      const first=menuDays[0].jdate, last=menuDays[menuDays.length-1].jdate;
-      document.getElementById('menuStatus').textContent = `منو بارگذاری شد ✅ (از ${first} تا ${last})`;
-    } else {
-      document.getElementById('menuStatus').textContent = 'منو خالی است';
+    MENU = await res.json();
+
+    // عنوان بازه
+    document.getElementById('rangeTitle').textContent =
+      `انتخاب غذا و کنارغذا ( ${MENU.range.start} تا ${MENU.range.end} شهریور )`;
+    document.getElementById('rangeNote').textContent =
+      `بازه فعال: ${MENU.range.start} تا ${MENU.range.end}`;
+
+    SIDES = MENU.sides || ["نوشابه","دوغ","سالاد فصل","ماست"];
+    // فقط روزهای کاری این بازه (off=false)
+    ACTIVE_DAYS = (MENU.days||[]).filter(d=>!d.off);
+
+    if(ACTIVE_DAYS.length){
+      document.getElementById('menuStatus').innerHTML = '<span class="okdot">●</span> منو بارگذاری شد';
+    }else{
+      document.getElementById('menuStatus').textContent = 'منویی برای این بازه ثبت نشده.';
     }
   }catch(e){
     document.getElementById('menuStatus').textContent = 'خطا در بارگذاری منو';
