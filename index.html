@@ -184,18 +184,23 @@ function workingSlice(){
 
 function updateSubmitEnabled(){
   const btn = document.getElementById('submitBtn');
-  const rows = document.querySelectorAll('[data-row="order"]');
   let allOk = true;
-  rows.forEach(row=>{
-    const selMeal = row.querySelector('select[data-kind="meal"]');
-    const selSide = row.querySelector('select[data-kind="side"]');
-    // اگر سلکتی وجود ندارد (مثلاً تعطیل)، این ردیف خودش اوکی است
-    const mOk = (!selMeal) || selMeal.value !== "";
-    const sOk = (!selSide) || selSide.value !== "";
-    if (selMeal) selMeal.classList.toggle('invalid', !mOk);
-    if (selSide) selSide.classList.toggle('invalid', !sOk);
-    allOk = allOk && mOk && sOk;
+
+  // فقط روزهایی که غذا دارن بررسی میشه
+  const slice = workingSlice().filter(d=>!d.off && d.menu);
+  slice.forEach(d=>{
+    const mealSel = document.getElementById(`meal_${d.jdate}`);
+    const sideSel = document.getElementById(`side_${d.jdate}`);
+
+    const mOk = mealSel && mealSel.value !== "";
+    const sOk = sideSel && sideSel.value !== "";
+
+    if (mealSel) mealSel.classList.toggle('invalid', !mOk);
+    if (sideSel) sideSel.classList.toggle('invalid', !sOk);
+
+    if (!mOk || !sOk) allOk = false;
   });
+
   btn.disabled = !allOk;
 }
 
