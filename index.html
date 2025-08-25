@@ -11,10 +11,12 @@
   .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:18px}
   h2,h3{margin:6px 0 14px}
   input,select,button{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#e6edf6;font-size:15px}
+  select.placeholder{color:#94a3b8}
   button{cursor:pointer;font-weight:800;background:linear-gradient(180deg,#22c55e,#16a34a);border:none}
+  button[disabled]{opacity:.6;cursor:not-allowed;filter:grayscale(40%)}
   button:hover{filter:brightness(1.05)}
   .danger{background:linear-gradient(180deg,#ef4444,#b91c1c)!important}
-  .grid-day{display:grid;gap:12px;grid-template-columns:260px 1fr 1fr}
+  .grid-day{display:grid;gap:12px;grid-template-columns:280px 1fr 1fr}
   @media (max-width:800px){.grid-day{grid-template-columns:1fr}}
   .badge{padding:12px;border-radius:12px;font-weight:800;text-align:center;color:#fff;border:1px solid #334155}
   .badge[data-day="شنبه"]{background:#ef4444}
@@ -23,10 +25,11 @@
   .badge[data-day="سه‌شنبه"]{background:#3b82f6}
   .badge[data-day="چهارشنبه"]{background:#8b5cf6}
   .badge.off{background:#64748b;text-decoration:line-through}
+  .invalid{border-color:#ef4444 !important; box-shadow:0 0 0 2px rgba(239,68,68,.25)}
+  .note{font-size:13px;color:#93c5fd;margin-top:6px}
   table{width:100%;border-collapse:collapse;margin-top:12px}
   th,td{border:1px solid #334155;padding:8px;text-align:center;font-size:13px}
   thead{background:#334155}
-  .note{font-size:13px;color:#93c5fd;margin-top:6px}
   .btn-row{display:grid;gap:10px;grid-template-columns:1fr 1fr}
   @media (max-width:700px){.btn-row{grid-template-columns:1fr}}
 </style>
@@ -55,10 +58,12 @@
     <p id="helloText" class="note"></p>
     <div id="holidayBar" class="note" style="display:none"></div>
     <div id="weeklyContainer"></div>
+
     <div class="btn-row" style="margin-top:12px">
-      <button onclick="submitOrder()">ثبت سفارش</button>
+      <button id="submitBtn" onclick="submitOrder()" disabled>ثبت سفارش</button>
       <button class="danger" onclick="logout()">بازگشت</button>
     </div>
+    <p id="progressMsg" class="note" style="display:none"></p>
     <p id="orderMsg" style="color:#34d399"></p>
   </div>
 
@@ -73,8 +78,8 @@
     </div>
 
     <div class="btn-row" style="margin:10px 0">
-      <button onclick="exportWeekCSVFromSheet()">⬇️ دانلود CSV هفتگی</button>
-      <button onclick="exportDailyByFloorCSVFromSheet()">⬇️ دانلود CSV روزانه به تفکیک طبقه</button>
+      <button onclick="exportWeekCSVFromSheet()">⬇️ CSV هفتگی</button>
+      <button onclick="exportDailyByFloorCSVFromSheet()">⬇️ CSV روزانه به تفکیک طبقه</button>
     </div>
 
     <table id="ordersTable">
@@ -87,7 +92,7 @@
 </div>
 
 <script>
-/* ===== لینک‌ها ===== */
+/* ===== لینک‌ها (در صورت تغییر، همین‌ها را ویرایش کن) ===== */
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbx_XfF012kwWwffB0icbT4o2Xxa-Zm_ZSDjyVVcoqJiN7GrR9LMQag23Lp_grU4ajx5jw/exec";
 const MENU_URL  = "https://alieskandari4599.github.io/company-food-order/menu.json";
 
@@ -138,9 +143,8 @@ const users = [
 ];
 
 const WORK_DAYS = ["شنبه","یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه"];
-let menuDays = [];  // از menu.json
-let sides = [];     // از menu.json
-let holidays = [];  // offها
+let menuDays = [];   // از menu.json
+let sides = [];      // از menu.json
 
 /* ---------- LOGIN ---------- */
 function login(){
@@ -170,81 +174,131 @@ function logout(){
   document.getElementById('whoAmI').textContent='';
 }
 
-/* ---------- MENU (8..21) ---------- */
-function _buildWorkingSlice() {
-  // فقط روزهای 8..21 که off نیستند و weekday جزو WORK_DAYS است
-  return (menuDays||[]).filter(d => {
+/* ---------- HELPERS ---------- */
+function workingSlice(){
+  return (menuDays||[]).filter(d=>{
     const inRange = d.jdate >= "1404/06/08" && d.jdate <= "1404/06/21";
-    return inRange && !d.off && WORK_DAYS.includes(d.weekday) && d.menu;
+    return inRange && WORK_DAYS.includes(d.weekday);
   });
 }
 
+function updateSubmitEnabled(){
+  const btn = document.getElementById('submitBtn');
+  const rows = document.querySelectorAll('[data-row="order"]');
+  let allOk = true;
+  rows.forEach(row=>{
+    const selMeal = row.querySelector('select[data-kind="meal"]');
+    const selSide = row.querySelector('select[data-kind="side"]');
+    const mOk = selMeal && selMeal.value !== "";
+    const sOk = selSide && selSide.value !== "";
+    selMeal.classList.toggle('invalid', !mOk);
+    selSide.classList.toggle('invalid', !sOk);
+    allOk = allOk && mOk && sOk;
+  });
+  btn.disabled = !allOk;
+}
+
+/* ---------- RENDER WEEK ---------- */
 function renderWeeklyForm(){
   const box = document.getElementById('weeklyContainer');
   const holBar = document.getElementById('holidayBar');
   box.innerHTML='';
 
-  const offs = (menuDays||[]).filter(d => d.jdate >= "1404/06/08" && d.jdate <= "1404/06/21" && d.off);
+  // تعطیلی‌ها
+  const offs = workingSlice().filter(d=>d.off);
   if(offs.length){
     holBar.style.display='block';
     holBar.textContent = "تعطیلی‌ها: " + offs.map(o=>`${o.jdate} (${o.weekday})`).join(' ، ');
-  } else {
-    holBar.style.display='none';
-  }
+  } else { holBar.style.display='none'; }
 
-  const slice = _buildWorkingSlice();
-  slice.forEach(item=>{
-    const m = item.menu; const types = Object.keys(m); // ["نوع1","نوع2","نوع3"]
+  // روزها
+  const days = workingSlice();
+  days.forEach(item=>{
+    if(item.off || !item.menu){
+      box.insertAdjacentHTML('beforeend', `
+        <div class="grid-day" data-row="order">
+          <div class="badge off" data-day="${item.weekday}">${item.jdate} — ${item.weekday}</div>
+          <div style="grid-column:span 2;opacity:.7">تعطیل / بدون منو</div>
+        </div>
+      `);
+      return;
+    }
+    const m = item.menu; const keys = Object.keys(m); // نوع1، نوع2، نوع3
     box.insertAdjacentHTML('beforeend', `
-      <div class="grid-day">
+      <div class="grid-day" data-row="order">
         <div class="badge" data-day="${item.weekday}">${item.jdate} — ${item.weekday}</div>
-        <select id="meal_${item.jdate}" class="select">
-          ${types.map(t=>`<option value="${m[t]}">${m[t]} (${t})</option>`).join('')}
+        <select id="meal_${item.jdate}" class="placeholder" data-kind="meal" onchange="this.classList.remove('placeholder');updateSubmitEnabled()">
+          <option value="" selected disabled>— انتخاب غذا —</option>
+          ${keys.map(k=>`<option value="${m[k]}">${m[k]} (${k})</option>`).join('')}
         </select>
-        <select id="side_${item.jdate}" class="select">
+        <select id="side_${item.jdate}" class="placeholder" data-kind="side" onchange="this.classList.remove('placeholder');updateSubmitEnabled()">
+          <option value="" selected disabled>— انتخاب کنارغذا —</option>
           ${sides.map(s=>`<option value="${s}">${s}</option>`).join('')}
         </select>
       </div>
     `);
   });
+
+  updateSubmitEnabled();
 }
 
-/* ---------- SUBMIT → Google Script ---------- */
+/* ---------- SUBMIT (strict) ---------- */
 async function submitOrder(){
   const code = localStorage.getItem('currentUser');
   const name = localStorage.getItem('currentUserName');
   const section = localStorage.getItem('currentUserSection');
   if(!code){ alert('ابتدا وارد شوید.'); return; }
 
-  const slice = _buildWorkingSlice();
-  if(!slice.length){ alert('منو برای این بازه یافت نشد.'); return; }
+  // جمع‌آوری و اعتبارسنجی
+  const slice = workingSlice().filter(d=>!d.off && d.menu);
+  const missing = [];
+  const rows = [];
+  slice.forEach(d=>{
+    const meal = document.getElementById(`meal_${d.jdate}`)?.value || "";
+    const side = document.getElementById(`side_${d.jdate}`)?.value || "";
+    if(!meal || !side) missing.push(`${d.jdate} (${d.weekday})`);
+    else rows.push({code,name,section,jdate:d.jdate,weekday:d.weekday,meal,side});
+  });
 
-  const rows = slice.map(d => ({
-    code, name, section,
-    jdate: d.jdate,
-    weekday: d.weekday,
-    meal: document.getElementById(`meal_${d.jdate}`).value,
-    side: document.getElementById(`side_${d.jdate}`).value
-  }));
+  if(missing.length){
+    const first = missing[0];
+    document.getElementById('orderMsg').textContent = "";
+    document.getElementById('progressMsg').style.display='block';
+    document.getElementById('progressMsg').textContent = "این موارد انتخاب نشده‌اند: " + missing.join(" ، ");
+    // اسکرول به اولین مورد ناقص
+    const firstMeal = document.getElementById(`meal_${first.split(" ")[0]}`) || document.querySelector('.invalid');
+    firstMeal?.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+
+  // قفل دکمه و ارسال
+  const btn = document.getElementById('submitBtn');
+  const pmsg = document.getElementById('progressMsg');
+  btn.disabled = true;
+  pmsg.style.display='block';
+  pmsg.textContent = "در حال ثبت سفارش‌ها…";
 
   try{
     const res = await fetch(SHEET_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(rows)
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(rows)
     });
     const data = await res.json();
     if(data.ok){
-      document.getElementById('orderMsg').textContent = 'سفارش‌ها ثبت شد ✅';
+      document.getElementById('orderMsg').textContent = `سفارش‌ها ثبت شد ✅ (تعداد: ${rows.length})`;
+      pmsg.style.display='none';
     }else{
-      document.getElementById('orderMsg').textContent = 'خطا در ثبت سفارش‌ها ❌';
+      document.getElementById('orderMsg').textContent = "خطا در ثبت سفارش‌ها ❌";
+      pmsg.style.display='none';
+      btn.disabled = false;
     }
   }catch(e){
-    document.getElementById('orderMsg').textContent = 'عدم دسترسی به سرور سفارش‌ها ❌';
+    document.getElementById('orderMsg')..textContent = "عدم دسترسی به سرور سفارش‌ها ❌";
+    pmsg.style.display='none';
+    btn.disabled = false;
   }
 }
 
-/* ---------- ADMIN: load & CSV (from sheet) ---------- */
+/* ---------- ADMIN: load & CSV from sheet ---------- */
 async function loadSheet(){
   try{
     const url = `${SHEET_URL}?from=1404/06/08&to=1404/06/21`;
@@ -253,7 +307,7 @@ async function loadSheet(){
     if(!data.ok){ alert('خطا در دریافت سفارش‌ها'); return; }
     const rows = data.rows || [];
     const tbody = document.querySelector('#ordersTable tbody');
-    tbody.innerHTML = '';
+    tbody.innerHTML='';
     rows.forEach(r=>{
       tbody.insertAdjacentHTML('beforeend',
         `<tr>
@@ -264,77 +318,59 @@ async function loadSheet(){
           <td>${r.weekday||''}</td>
           <td>${r.meal||''}</td>
           <td>${r.side||''}</td>
-        </tr>`
-      );
+        </tr>`);
     });
     alert(`تعداد ردیف خوانده‌شده: ${rows.length}`);
-  }catch(e){
-    alert('عدم دسترسی به سرور سفارش‌ها');
-  }
+  }catch(e){ alert('عدم دسترسی به سرور سفارش‌ها'); }
 }
 
 function exportWeekCSVFromSheet(){
-  const tbody = document.querySelector('#ordersTable tbody');
+  const tbody=document.querySelector('#ordersTable tbody');
   if(!tbody.children.length){ alert('اول «خواندن سفارش‌ها» را بزنید.'); return; }
-  let csv = "کد ملی,نام,بخش,تاریخ,روز,غذا,کنارغذا\n";
+  let csv="کد ملی,نام,بخش,تاریخ,روز,غذا,کنارغذا\n";
   [...tbody.querySelectorAll('tr')].forEach(tr=>{
-    const tds=[...tr.children].map(td=> (td.textContent||'').replaceAll(',', '،') );
-    csv += tds.join(",") + "\n";
+    const tds=[...tr.children].map(td=>(td.textContent||'').replaceAll(',','،'));
+    csv+=tds.join(",")+"\n";
   });
-  downloadCSV(csv, "orders_1404-06-08_1404-06-21.csv");
+  downloadCSV("\uFEFF"+csv,"orders_1404-06-08_1404-06-21.csv");
 }
-
 function exportDailyByFloorCSVFromSheet(){
-  const tbody = document.querySelector('#ordersTable tbody');
+  const tbody=document.querySelector('#ordersTable tbody');
   if(!tbody.children.length){ alert('اول «خواندن سفارش‌ها» را بزنید.'); return; }
-
-  // خواندن داده‌ها از جدول
-  const rows = [...tbody.querySelectorAll('tr')].map(tr=>{
-    const td = tr.children;
-    return {
-      code: td[0].textContent, name: td[1].textContent, section: td[2].textContent,
-      jdate: td[3].textContent, weekday: td[4].textContent, meal: td[5].textContent, side: td[6].textContent
-    };
+  const rows=[...tbody.querySelectorAll('tr')].map(tr=>{
+    const td=tr.children; return {code:td[0].textContent,name:td[1].textContent,section:td[2].textContent,
+      jdate:td[3].textContent,weekday:td[4].textContent,meal:td[5].textContent,side:td[6].textContent};
   });
-
-  // روزهای کاری این بازه را پیدا کنیم
-  const dayOrder = ["شنبه","یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه"];
-  const days = [...new Set(rows.map(r=>r.weekday))].filter(d=>dayOrder.includes(d))
-               .sort((a,b)=>dayOrder.indexOf(a)-dayOrder.indexOf(b));
-
+  const dayOrder=["شنبه","یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه"];
+  const days=[...new Set(rows.map(r=>r.weekday))].filter(d=>dayOrder.includes(d))
+              .sort((a,b)=>dayOrder.indexOf(a)-dayOrder.indexOf(b));
   days.forEach(day=>{
-    const floors = [...new Set(rows.map(r=>r.section))];
-    let parts = [];
+    const floors=[...new Set(rows.map(r=>r.section))];
+    let parts=[];
     floors.forEach(f=>{
       let block = `طبقه: ${f}\nکد ملی,نام,${day}\n`;
-      rows.filter(r=>r.section===f && r.weekday===day)
-          .forEach(r=>{
-            const cell = [r.meal,r.side].filter(Boolean).join(" + ");
-            block += `${r.code},${r.name},${cell}\n`;
-          });
+      rows.filter(r=>r.section===f && r.weekday===day).forEach(r=>{
+        const cell=[r.meal,r.side].filter(Boolean).join(" + ");
+        block+=`${r.code},${r.name},${cell}\n`;
+      });
       parts.push(block);
     });
-    const csv = "\uFEFF" + parts.join("\n");
-    downloadCSV(csv, `orders_${day}_by_floor.csv`);
+    downloadCSV("\uFEFF"+parts.join("\n"),`orders_${day}_by_floor.csv`);
   });
 }
-
 function downloadCSV(text, filename){
-  const blob = new Blob([text], {type:"text/csv;charset=utf-8"});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=filename; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 0);
+  const blob=new Blob([text],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),0);
 }
 
-/* ---------- بارگذاری menu.json ---------- */
+/* ---------- load menu.json ---------- */
 async function loadMenu(){
   try{
     const res = await fetch(MENU_URL + "?v=" + Date.now());
     const data = await res.json();
     menuDays = data.days || [];
-    sides = data.sides || ["نوشابه","دوغ","سالاد"];
-    holidays = (menuDays||[]).filter(d=>d.off && d.jdate>="1404/06/08" && d.jdate<="1404/06/21");
+    sides = (data.sides || ["نوشابه","دوغ","سالاد"]).filter(s=>s!=="ماست"); // ماست حذف شد
     document.getElementById('menuStatus').textContent = 'منو بارگذاری شد ✅';
   }catch(e){
     document.getElementById('menuStatus').textContent = 'خطا در بارگذاری منو ❌';
