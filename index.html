@@ -43,7 +43,7 @@
   <!-- ورود -->
   <div class="card" id="loginDiv">
     <h3>ورود</h3>
-    <p class="note">کد ملی خود را وارد کنید. </p>
+    <p class="note">کد ملی خود را وارد کنید. (برای مدیر: <b>admin</b>)</p>
     <input id="userCode" placeholder="کد ملی" />
     <button onclick="login()">ورود</button>
     <p id="loginMsg" style="color:#f87171"></p>
@@ -87,8 +87,11 @@
 </div>
 
 <script>
-/* ===== لینک Google Script (ثبت/خواندن سفارش‌ها) ===== */
+/* ===== لینک‌ها ===== */
+// Google Script شما (ثابت همونی که دادی)
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbx_XfF012kwWwffB0icbT4o2Xxa-Zm_ZSDjyVVcoqJiN7GrR9LMQag23Lp_grU4ajx5jw/exec";
+// آدرس قطعی menu.json روی GitHub Pages (اگر اسم ریپو فرق دارد، این را تغییر بده)
+const MENU_URL  = "https://alieskandari4599.github.io/company-food-order/menu.json";
 
 /* ===== کارکنان (کامل) ===== */
 const users = [
@@ -136,11 +139,11 @@ const users = [
  {"code":"5669148134","name":"حقیقت نوروزی","section":"طبقه 2"}
 ];
 
-/* داده‌های منو از menu.json (۸ تا ۲۱ شهریور) */
-let menuDays = [];   // [{jdate, weekday, off?, menu:{نوع1,نوع2,نوع3}}]
-let sides = [];      // ["نوشابه",...]
+/* ===== داده‌های منو ===== */
+let menuDays = [];   // [{jdate, weekday, off, menu:{نوع1,نوع2,نوع3}}]
+let sides    = [];   // ["نوشابه",...]
 
-/* ورود/خروج */
+/* ===== ورود/خروج ===== */
 function login(){
   const code=document.getElementById("userCode").value.trim();
   if(code==="admin"){
@@ -165,29 +168,80 @@ function logout(){
   document.getElementById("whoAmI").textContent="";
 }
 
-/* ساخت فرم از menu.json */
+/* ===== لود منو (ضدکش و ضدخطا) ===== */
+async function loadMenu(){
+  const status = document.getElementById("menuStatus");
+  try{
+    const res = await fetch(MENU_URL + "?v=" + Date.now(), {cache:"no-store"});
+    if(!res.ok){ throw new Error("HTTP " + res.status); }
+    const data = await res.json();
+
+    const rawDays  = Array.isArray(data.days)  ? data.days  : [];
+    const rawSides = Array.isArray(data.sides) ? data.sides : [];
+    sides = rawSides.length ? rawSides : ["نوشابه","دوغ","ماست","سالاد"];
+
+    menuDays = rawDays.map(d => {
+      const off = d.off === true;
+      const menu = (d.menu && typeof d.menu === "object") ? d.menu : {};
+      return {
+        jdate: d.jdate || "",
+        weekday: d.weekday || "",
+        off,
+        menu: off ? { "نوع1":"", "نوع2":"", "نوع3":"" } : {
+          "نوع1": String(menu["نوع1"] || ""),
+          "نوع2": String(menu["نوع2"] || ""),
+          "نوع3": String(menu["نوع3"] || "")
+        }
+      };
+    });
+
+    // نگه‌داشتن فقط ۸ تا ۲۱ شهریور
+    menuDays = menuDays.filter(d => /^1404\/06\/(0?8|09|1[0-9]|20|21)$/.test(d.jdate));
+
+    status.textContent = "منو بارگذاری شد ✅";
+    renderWeeklyForm();
+  }catch(err){
+    console.error("loadMenu error:", err);
+    status.textContent = "خطا در بارگذاری منو: " + (err.message || err);
+  }
+}
+
+/* ===== ساخت فرم از menu.json ===== */
 function renderWeeklyForm(){
   const box=document.getElementById("weeklyContainer");
   const hol=document.getElementById("holidayBar");
   box.innerHTML="";
-  const offs=menuDays.filter(d=>d.off);
-  if(offs.length){ hol.style.display="block"; hol.textContent="تعطیلی‌ها: "+offs.map(o=>`${o.jdate} (${o.weekday})`).join(" ، "); }
-  else hol.style.display="none";
+
+  if(!Array.isArray(menuDays) || menuDays.length===0){
+    box.innerHTML = '<div style="color:#f87171">منو خالی است یا درست بارگذاری نشده.</div>';
+    return;
+  }
+
+  const offs = menuDays.filter(d=>d.off);
+  if(offs.length){
+    hol.style.display="block";
+    hol.textContent = "تعطیلی‌ها: " + offs.map(o=>`${o.jdate} (${o.weekday})`).join(" ، ");
+  } else {
+    hol.style.display="none";
+  }
 
   menuDays.forEach(d=>{
     if(d.off){
       box.insertAdjacentHTML("beforeend",
-        `<div class="grid-day"><div class="badge off">${d.weekday} (${d.jdate})</div>
-         <div style="grid-column:span 2;color:#94a3b8;">تعطیل</div></div>`);
+        `<div class="grid-day">
+           <div class="badge off">${d.weekday} (${d.jdate})</div>
+           <div style="grid-column:span 2;color:#94a3b8;">تعطیل</div>
+         </div>`);
       return;
     }
+    const n1 = d.menu["نوع1"] || "";
+    const n2 = d.menu["نوع2"] || "";
+    const n3 = d.menu["نوع3"] || "";
     box.insertAdjacentHTML("beforeend",`
       <div class="grid-day">
         <div class="badge" data-day="${d.weekday}">${d.weekday} (${d.jdate})</div>
         <select id="meal_${d.jdate}">
-          <option>${d.menu["نوع1"]}</option>
-          <option>${d.menu["نوع2"]}</option>
-          <option>${d.menu["نوع3"]}</option>
+          ${[n1,n2,n3].map(v=>`<option>${v}</option>`).join("")}
         </select>
         <select id="side_${d.jdate}">
           ${sides.map(s=>`<option>${s}</option>`).join("")}
@@ -197,27 +251,30 @@ function renderWeeklyForm(){
   });
 }
 
-/* ثبت سفارش → Google Script */
+/* ===== ثبت سفارش → Google Sheet ===== */
 async function submitOrder(){
   const u=JSON.parse(localStorage.getItem("currentUser")||"null");
   if(!u){ alert("ابتدا وارد شوید."); return; }
+
   for(const d of menuDays){
     if(d.off) continue;
     const meal=document.getElementById(`meal_${d.jdate}`).value;
     const side=document.getElementById(`side_${d.jdate}`).value;
-    await fetch(SHEET_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({code:u.code,name:u.name,section:u.section,jdate:d.jdate,weekday:d.weekday,meal,side})
-    }).catch(()=>{});
+    try{
+      await fetch(SHEET_URL,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({code:u.code,name:u.name,section:u.section,jdate:d.jdate,weekday:d.weekday,meal,side})
+      });
+    }catch(e){ console.warn("POST failed for", d.jdate, e); }
   }
   document.getElementById("orderMsg").textContent="سفارش شما ثبت شد ✅";
 }
 
-/* پنل مدیر: خواندن از شیت و نمایش جدول */
+/* ===== پنل مدیر: خواندن از شیت + CSV ===== */
 async function loadSheet(){
-  const res=await fetch(SHEET_URL);
-  const data=await res.json();
+  const res=await fetch(SHEET_URL, {cache:"no-store"});
+  const data=await res.json(); // [{code,name,section,jdate,weekday,meal,side}]
   const tbody=document.querySelector("#ordersTable tbody");
   tbody.innerHTML="";
   data.forEach(r=>{
@@ -226,8 +283,6 @@ async function loadSheet(){
            <td>${r.jdate}</td><td>${r.weekday}</td><td>${r.meal}</td><td>${r.side}</td></tr>`);
   });
 }
-
-/* ابزار CSV */
 function downloadCSV(text, filename){
   const blob = new Blob(["\uFEFF"+text], {type:"text/csv;charset=utf-8"});
   const a=document.createElement('a');
@@ -236,82 +291,50 @@ function downloadCSV(text, filename){
   setTimeout(()=>URL.revokeObjectURL(a.href), 0);
 }
 function normalize(str){ return (str||"").toString().replace(/[\r\n]+/g," ").replace(/,/g,"،"); }
+async function getAllOrders(){ const r=await fetch(SHEET_URL, {cache:"no-store"}); return await r.json(); }
 
-/* دریافت همه رکوردها از شیت */
-async function getAllOrders(){
-  const res=await fetch(SHEET_URL);
-  return await res.json(); // [{code,name,section,jdate,weekday,meal,side}]
-}
-
-/* ⬇️ CSV هفتگی: یک فایل با ستون‌های همه روزهای کاری بازه */
+/* CSV هفتگی: ستون‌ها = روزهای کاری غیرتعطیل منو */
 async function exportWeekCSVFromSheet(){
   const data = await getAllOrders();
-  // روزهای کاریِ غیرتعطیل از menu.json (ترتیب درست با تاریخ)
-  const daysWorking = menuDays.filter(d=>!d.off).map(d=>({key:`${d.jdate}`, label:`${d.jdate} (${d.weekday})`}));
-
-  // سرستون‌ها
+  const daysWorking = menuDays.filter(d=>!d.off).map(d=>({key:d.jdate, label:`${d.jdate} (${d.weekday})`}));
   let header = ["کد ملی","نام","بخش", ...daysWorking.map(d=>d.label)];
   let rows = [header];
 
-  // یکتا کردن کاربران بر اساس کد
   const byCode = {};
   data.forEach(r=>{
     if(!byCode[r.code]) byCode[r.code] = {code:r.code, name:r.name, section:r.section, days:{}};
     byCode[r.code].days[r.jdate] = `${normalize(r.meal)} + ${normalize(r.side)}`;
   });
 
-  // فقط کارمندانی که سفارشی ثبت کرده‌اند
   Object.values(byCode).forEach(p=>{
     const line = [p.code, normalize(p.name), normalize(p.section)];
-    daysWorking.forEach(d=>{
-      line.push( normalize(p.days[d.key]||"") );
-    });
+    daysWorking.forEach(d=> line.push(normalize(p.days[d.key]||"")) );
     rows.push(line);
   });
 
   const csv = rows.map(r=>r.join(",")).join("\n");
-  downloadCSV(csv, "orders_weekly.csv");
+  downloadCSV(csv, "orders_weekly_1404-06-08_to_1404-06-21.csv");
 }
 
-/* ⬇️ CSV روزانه به تفکیک طبقه: برای هر روز یک فایل جدا */
+/* CSV روزانه به تفکیک طبقه: برای هر روز غیرتعطیل یک فایل جدا */
 async function exportDailyByFloorCSVFromSheet(){
   const data = await getAllOrders();
   const floors = [...new Set(users.map(u=>u.section))];
-
-  // برای هر روز کاریِ غیرتعطیل یک CSV بساز
   for(const d of menuDays){
     if(d.off) continue;
-    const dayDate = d.jdate, dayName = d.weekday;
-
-    let parts = [];
+    const parts = [];
     floors.forEach(floor=>{
-      // هدر بلوک هر طبقه
       let block = [`طبقه: ${floor}`, "کد ملی,نام,بخش,سفارش"];
-      data
-        .filter(r=>r.jdate===dayDate && r.section===floor)
-        .forEach(r=>{
-          block.push([r.code, normalize(r.name), normalize(r.section), `${normalize(r.meal)} + ${normalize(r.side)}`].join(","));
-        });
+      data.filter(r=>r.jdate===d.jdate && r.section===floor).forEach(r=>{
+        block.push([r.code, normalize(r.name), normalize(r.section), `${normalize(r.meal)} + ${normalize(r.side)}`].join(","));
+      });
       parts.push(block.join("\n"));
     });
-
-    const csv = parts.join("\n\n");
-    downloadCSV(csv, `orders_${dayDate.replaceAll("/","-")}_by_floor.csv`);
+    downloadCSV(parts.join("\n\n"), `orders_${d.jdate.replaceAll("/","-")}_by_floor.csv`);
   }
 }
 
-/* لود منو از menu.json (۸ تا ۲۱ شهریور) */
-async function loadMenu(){
-  try{
-    const res=await fetch("./menu.json?v="+Date.now());
-    const data=await res.json();
-    menuDays=data.days||[];
-    sides=data.sides||["نوشابه","دوغ","ماست","سالاد"];
-    document.getElementById("menuStatus").textContent="منو بارگذاری شد ✅";
-  }catch(e){
-    document.getElementById("menuStatus").textContent="خطا در بارگذاری منو";
-  }
-}
+/* بوت */
 loadMenu();
 </script>
 </body>
