@@ -46,7 +46,7 @@
   <!-- ورود -->
   <div class="card" id="loginDiv">
     <h3>ورود</h3>
-    <p class="note">کد ملی خود را وارد کنید. (برای مدیر: <b>admin</b>)</p>
+    <p class="note">کد ملی خود را وارد کنید. </p>
     <input id="userCode" placeholder="کد ملی" />
     <button onclick="login()">ورود</button>
     <p id="loginMsg" style="color:#f87171"></p>
@@ -146,36 +146,9 @@ const WORK_DAYS = ["شنبه","یکشنبه","دوشنبه","سه‌شنبه","�
 let menuDays = [];   // از menu.json
 let sides = [];      // از menu.json
 
-/* ---------- LOGIN ---------- */
-function login(){
-  const code = document.getElementById('userCode').value.trim();
-  if(code === 'admin'){
-    document.getElementById('loginDiv').style.display='none';
-    document.getElementById('adminDiv').style.display='block';
-    document.getElementById('whoAmI').textContent='مدیر سیستم';
-    return;
-  }
-  const u = users.find(x=>x.code===code);
-  if(!u){ document.getElementById('loginMsg').textContent='کد ملی معتبر نیست!'; return; }
-  localStorage.setItem('currentUser',u.code);
-  localStorage.setItem('currentUserName',u.name);
-  localStorage.setItem('currentUserSection',u.section);
-  document.getElementById('loginDiv').style.display='none';
-  document.getElementById('orderDiv').style.display='block';
-  document.getElementById('helloText').textContent=`سلام ${u.name} (${u.section})`;
-  document.getElementById('whoAmI').textContent=`${u.name} • ${u.section}`;
-  renderWeeklyForm();
-}
-
-function logout(){
-  document.getElementById('orderDiv').style.display='none';
-  document.getElementById('adminDiv').style.display='none';
-  document.getElementById('loginDiv').style.display='block';
-  document.getElementById('whoAmI').textContent='';
-}
-
 /* ---------- HELPERS ---------- */
 function workingSlice(){
+  // فقط بازه 1404/06/08 تا 1404/06/21 و روزهای کاری
   return (menuDays||[]).filter(d=>{
     const inRange = d.jdate >= "1404/06/08" && d.jdate <= "1404/06/21";
     return inRange && WORK_DAYS.includes(d.weekday);
@@ -204,20 +177,22 @@ function renderWeeklyForm(){
   const holBar = document.getElementById('holidayBar');
   box.innerHTML='';
 
+  const days = workingSlice();
+
   // تعطیلی‌ها
-  const offs = workingSlice().filter(d=>d.off);
+  const offs = days.filter(d=>d.off);
   if(offs.length){
     holBar.style.display='block';
     holBar.textContent = "تعطیلی‌ها: " + offs.map(o=>`${o.jdate} (${o.weekday})`).join(' ، ');
   } else { holBar.style.display='none'; }
 
   // روزها
-  const days = workingSlice();
   days.forEach(item=>{
+    const label = `${item.jdate} — ${item.weekday}`;
     if(item.off || !item.menu){
       box.insertAdjacentHTML('beforeend', `
         <div class="grid-day" data-row="order">
-          <div class="badge off" data-day="${item.weekday}">${item.jdate} — ${item.weekday}</div>
+          <div class="badge off" data-day="${item.weekday}">${label}</div>
           <div style="grid-column:span 2;opacity:.7">تعطیل / بدون منو</div>
         </div>
       `);
@@ -226,7 +201,7 @@ function renderWeeklyForm(){
     const m = item.menu; const keys = Object.keys(m); // نوع1، نوع2، نوع3
     box.insertAdjacentHTML('beforeend', `
       <div class="grid-day" data-row="order">
-        <div class="badge" data-day="${item.weekday}">${item.jdate} — ${item.weekday}</div>
+        <div class="badge" data-day="${item.weekday}">${label}</div>
         <select id="meal_${item.jdate}" class="placeholder" data-kind="meal" onchange="this.classList.remove('placeholder');updateSubmitEnabled()">
           <option value="" selected disabled>— انتخاب غذا —</option>
           ${keys.map(k=>`<option value="${m[k]}">${m[k]} (${k})</option>`).join('')}
@@ -242,6 +217,56 @@ function renderWeeklyForm(){
   updateSubmitEnabled();
 }
 
+/* ---------- MENU LOADER ---------- */
+async function loadMenu(){
+  try{
+    const res = await fetch(MENU_URL + "?v=" + Date.now());
+    const data = await res.json();
+    menuDays = data.days || [];
+    // «ماست» حذف شده
+    sides = (data.sides || ["نوشابه","دوغ","سالاد"]).filter(s=>s!=="ماست");
+    document.getElementById('menuStatus').textContent = 'منو بارگذاری شد ✅';
+  }catch(e){
+    document.getElementById('menuStatus').textContent = 'خطا در بارگذاری منو ❌';
+  }
+}
+// لود منو از ابتدا
+loadMenu();
+
+/* ---------- LOGIN ---------- */
+async function login(){
+  const code = document.getElementById('userCode').value.trim();
+  if(code === 'admin'){
+    document.getElementById('loginDiv').style.display='none';
+    document.getElementById('adminDiv').style.display='block';
+    document.getElementById('whoAmI').textContent='مدیر سیستم';
+    return;
+  }
+  const u = users.find(x=>x.code===code);
+  if(!u){ document.getElementById('loginMsg').textContent='کد ملی معتبر نیست!'; return; }
+
+  // اگر منو هنوز نیامده، ابتدا لودش کن
+  if (!menuDays.length || !sides.length) {
+    await loadMenu();
+  }
+
+  localStorage.setItem('currentUser',u.code);
+  localStorage.setItem('currentUserName',u.name);
+  localStorage.setItem('currentUserSection',u.section);
+  document.getElementById('loginDiv').style.display='none';
+  document.getElementById('orderDiv').style.display='block';
+  document.getElementById('helloText').textContent=`سلام ${u.name} (${u.section})`;
+  document.getElementById('whoAmI').textContent=`${u.name} • ${u.section}`;
+  renderWeeklyForm();
+}
+
+function logout(){
+  document.getElementById('orderDiv').style.display='none';
+  document.getElementById('adminDiv').style.display='none';
+  document.getElementById('loginDiv').style.display='block';
+  document.getElementById('whoAmI').textContent='';
+}
+
 /* ---------- SUBMIT (strict) ---------- */
 async function submitOrder(){
   const code = localStorage.getItem('currentUser');
@@ -249,7 +274,6 @@ async function submitOrder(){
   const section = localStorage.getItem('currentUserSection');
   if(!code){ alert('ابتدا وارد شوید.'); return; }
 
-  // جمع‌آوری و اعتبارسنجی
   const slice = workingSlice().filter(d=>!d.off && d.menu);
   const missing = [];
   const rows = [];
@@ -261,17 +285,12 @@ async function submitOrder(){
   });
 
   if(missing.length){
-    const first = missing[0];
     document.getElementById('orderMsg').textContent = "";
     document.getElementById('progressMsg').style.display='block';
     document.getElementById('progressMsg').textContent = "این موارد انتخاب نشده‌اند: " + missing.join(" ، ");
-    // اسکرول به اولین مورد ناقص
-    const firstMeal = document.getElementById(`meal_${first.split(" ")[0]}`) || document.querySelector('.invalid');
-    firstMeal?.scrollIntoView({behavior:'smooth',block:'center'});
     return;
   }
 
-  // قفل دکمه و ارسال
   const btn = document.getElementById('submitBtn');
   const pmsg = document.getElementById('progressMsg');
   btn.disabled = true;
@@ -280,7 +299,9 @@ async function submitOrder(){
 
   try{
     const res = await fetch(SHEET_URL, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(rows)
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(rows)
     });
     const data = await res.json();
     if(data.ok){
@@ -292,13 +313,13 @@ async function submitOrder(){
       btn.disabled = false;
     }
   }catch(e){
-    document.getElementById('orderMsg')..textContent = "عدم دسترسی به سرور سفارش‌ها ❌";
+    document.getElementById('orderMsg').textContent = "عدم دسترسی به سرور سفارش‌ها ❌";
     pmsg.style.display='none';
     btn.disabled = false;
   }
 }
 
-/* ---------- ADMIN: load & CSV from sheet ---------- */
+/* ---------- ADMIN: خواندن شیت و خروجی CSV ---------- */
 async function loadSheet(){
   try{
     const url = `${SHEET_URL}?from=1404/06/08&to=1404/06/21`;
@@ -334,6 +355,7 @@ function exportWeekCSVFromSheet(){
   });
   downloadCSV("\uFEFF"+csv,"orders_1404-06-08_1404-06-21.csv");
 }
+
 function exportDailyByFloorCSVFromSheet(){
   const tbody=document.querySelector('#ordersTable tbody');
   if(!tbody.children.length){ alert('اول «خواندن سفارش‌ها» را بزنید.'); return; }
@@ -358,25 +380,12 @@ function exportDailyByFloorCSVFromSheet(){
     downloadCSV("\uFEFF"+parts.join("\n"),`orders_${day}_by_floor.csv`);
   });
 }
+
 function downloadCSV(text, filename){
   const blob=new Blob([text],{type:"text/csv;charset=utf-8"});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),0);
 }
-
-/* ---------- load menu.json ---------- */
-async function loadMenu(){
-  try{
-    const res = await fetch(MENU_URL + "?v=" + Date.now());
-    const data = await res.json();
-    menuDays = data.days || [];
-    sides = (data.sides || ["نوشابه","دوغ","سالاد"]).filter(s=>s!=="ماست"); // ماست حذف شد
-    document.getElementById('menuStatus').textContent = 'منو بارگذاری شد ✅';
-  }catch(e){
-    document.getElementById('menuStatus').textContent = 'خطا در بارگذاری منو ❌';
-  }
-}
-loadMenu();
 </script>
 </body>
 </html>
