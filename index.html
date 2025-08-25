@@ -92,11 +92,11 @@
 </div>
 
 <script>
-/* ===== لینک‌ها (در صورت تغییر، همین‌ها را ویرایش کن) ===== */
+/* ===== لینک‌ها ===== */
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbx_XfF012kwWwffB0icbT4o2Xxa-Zm_ZSDjyVVcoqJiN7GrR9LMQag23Lp_grU4ajx5jw/exec";
 const MENU_URL  = "https://alieskandari4599.github.io/company-food-order/menu.json";
 
-/* ===== کارکنان (کامل) ===== */
+/* ===== کارکنان ===== */
 const users = [
  {"code":"1465316159","name":"علی اصغرزاده صادق","section":"طبقه 4"},
  {"code":"0939825902","name":"سید علی میرتونی","section":"طبقه 4"},
@@ -146,95 +146,8 @@ const WORK_DAYS = ["شنبه","یکشنبه","دوشنبه","سه‌شنبه","�
 let menuDays = [];   // از menu.json
 let sides = [];      // از menu.json
 
-/* ---------- HELPERS ---------- */
-function workingSlice(){
-  // فقط بازه 1404/06/08 تا 1404/06/21 و روزهای کاری
-  return (menuDays||[]).filter(d=>{
-    const inRange = d.jdate >= "1404/06/08" && d.jdate <= "1404/06/21";
-    return inRange && WORK_DAYS.includes(d.weekday);
-  });
-}
-
-function updateSubmitEnabled(){
-  const btn = document.getElementById('submitBtn');
-  const rows = document.querySelectorAll('[data-row="order"]');
-  let allOk = true;
-  rows.forEach(row=>{
-    const selMeal = row.querySelector('select[data-kind="meal"]');
-    const selSide = row.querySelector('select[data-kind="side"]');
-    const mOk = selMeal && selMeal.value !== "";
-    const sOk = selSide && selSide.value !== "";
-    selMeal.classList.toggle('invalid', !mOk);
-    selSide.classList.toggle('invalid', !sOk);
-    allOk = allOk && mOk && sOk;
-  });
-  btn.disabled = !allOk;
-}
-
-/* ---------- RENDER WEEK ---------- */
-function renderWeeklyForm(){
-  const box = document.getElementById('weeklyContainer');
-  const holBar = document.getElementById('holidayBar');
-  box.innerHTML='';
-
-  const days = workingSlice();
-
-  // تعطیلی‌ها
-  const offs = days.filter(d=>d.off);
-  if(offs.length){
-    holBar.style.display='block';
-    holBar.textContent = "تعطیلی‌ها: " + offs.map(o=>`${o.jdate} (${o.weekday})`).join(' ، ');
-  } else { holBar.style.display='none'; }
-
-  // روزها
-  days.forEach(item=>{
-    const label = `${item.jdate} — ${item.weekday}`;
-    if(item.off || !item.menu){
-      box.insertAdjacentHTML('beforeend', `
-        <div class="grid-day" data-row="order">
-          <div class="badge off" data-day="${item.weekday}">${label}</div>
-          <div style="grid-column:span 2;opacity:.7">تعطیل / بدون منو</div>
-        </div>
-      `);
-      return;
-    }
-    const m = item.menu; const keys = Object.keys(m); // نوع1، نوع2، نوع3
-    box.insertAdjacentHTML('beforeend', `
-      <div class="grid-day" data-row="order">
-        <div class="badge" data-day="${item.weekday}">${label}</div>
-        <select id="meal_${item.jdate}" class="placeholder" data-kind="meal" onchange="this.classList.remove('placeholder');updateSubmitEnabled()">
-          <option value="" selected disabled>— انتخاب غذا —</option>
-          ${keys.map(k=>`<option value="${m[k]}">${m[k]} (${k})</option>`).join('')}
-        </select>
-        <select id="side_${item.jdate}" class="placeholder" data-kind="side" onchange="this.classList.remove('placeholder');updateSubmitEnabled()">
-          <option value="" selected disabled>— انتخاب کنارغذا —</option>
-          ${sides.map(s=>`<option value="${s}">${s}</option>`).join('')}
-        </select>
-      </div>
-    `);
-  });
-
-  updateSubmitEnabled();
-}
-
-/* ---------- MENU LOADER ---------- */
-async function loadMenu(){
-  try{
-    const res = await fetch(MENU_URL + "?v=" + Date.now());
-    const data = await res.json();
-    menuDays = data.days || [];
-    // «ماست» حذف شده
-    sides = (data.sides || ["نوشابه","دوغ","سالاد"]).filter(s=>s!=="ماست");
-    document.getElementById('menuStatus').textContent = 'منو بارگذاری شد ✅';
-  }catch(e){
-    document.getElementById('menuStatus').textContent = 'خطا در بارگذاری منو ❌';
-  }
-}
-// لود منو از ابتدا
-loadMenu();
-
 /* ---------- LOGIN ---------- */
-async function login(){
+function login(){
   const code = document.getElementById('userCode').value.trim();
   if(code === 'admin'){
     document.getElementById('loginDiv').style.display='none';
@@ -244,12 +157,6 @@ async function login(){
   }
   const u = users.find(x=>x.code===code);
   if(!u){ document.getElementById('loginMsg').textContent='کد ملی معتبر نیست!'; return; }
-
-  // اگر منو هنوز نیامده، ابتدا لودش کن
-  if (!menuDays.length || !sides.length) {
-    await loadMenu();
-  }
-
   localStorage.setItem('currentUser',u.code);
   localStorage.setItem('currentUserName',u.name);
   localStorage.setItem('currentUserSection',u.section);
@@ -267,7 +174,84 @@ function logout(){
   document.getElementById('whoAmI').textContent='';
 }
 
-/* ---------- SUBMIT (strict) ---------- */
+/* ---------- HELPERS ---------- */
+function workingSlice(){
+  return (menuDays||[]).filter(d=>{
+    const inRange = d.jdate >= "1404/06/08" && d.jdate <= "1404/06/21";
+    return inRange && WORK_DAYS.includes(d.weekday);
+  });
+}
+
+function updateSubmitEnabled(){
+  const btn = document.getElementById('submitBtn');
+  const rows = document.querySelectorAll('[data-row="order"]');
+  let allOk = true;
+  rows.forEach(row=>{
+    const selMeal = row.querySelector('select[data-kind="meal"]');
+    const selSide = row.querySelector('select[data-kind="side"]');
+    // اگر سلکتی وجود ندارد (مثلاً تعطیل)، این ردیف خودش اوکی است
+    const mOk = (!selMeal) || selMeal.value !== "";
+    const sOk = (!selSide) || selSide.value !== "";
+    if (selMeal) selMeal.classList.toggle('invalid', !mOk);
+    if (selSide) selSide.classList.toggle('invalid', !sOk);
+    allOk = allOk && mOk && sOk;
+  });
+  btn.disabled = !allOk;
+}
+
+/* ---------- RENDER WEEK ---------- */
+function renderWeeklyForm(){
+  const box = document.getElementById('weeklyContainer');
+  const holBar = document.getElementById('holidayBar');
+  box.innerHTML='';
+
+  // تعطیلی‌ها
+  const offs = workingSlice().filter(d=>d.off);
+  if(offs.length){
+    holBar.style.display='block';
+    holBar.textContent = "تعطیلی‌ها: " + offs.map(o=>`${o.jdate} (${o.weekday})`).join(' ، ');
+  } else { holBar.style.display='none'; }
+
+  // روزها
+  const days = workingSlice();
+  days.forEach(item=>{
+    if(item.off || !item.menu){
+      box.insertAdjacentHTML('beforeend', `
+        <div class="grid-day" data-row="off">
+          <div class="badge off" data-day="${item.weekday}">${item.jdate} — ${item.weekday}</div>
+          <div style="grid-column:span 2;opacity:.7">تعطیل / بدون منو</div>
+        </div>
+      `);
+      return;
+    }
+    const m = item.menu; const keys = Object.keys(m); // نوع1، نوع2، نوع3
+    box.insertAdjacentHTML('beforeend', `
+      <div class="grid-day" data-row="order">
+        <div class="badge" data-day="${item.weekday}">${item.jdate} — ${item.weekday}</div>
+        <select id="meal_${item.jdate}" class="placeholder" data-kind="meal" onchange="this.classList.remove('placeholder');updateSubmitEnabled()">
+          <option value="" selected disabled>— انتخاب غذا —</option>
+          ${keys.map(k=>`<option value="${m[k]}">${m[k]} (${k})</option>`).join('')}
+        </select>
+        <select id="side_${item.jdate}" class="placeholder" data-kind="side" onchange="this.classList.remove('placeholder');updateSubmitEnabled()">
+          <option value="" selected disabled>— انتخاب کنارغذا —</option>
+          ${sides.map(s=>`<option value="${s}">${s}</option>`).join('')}
+        </select>
+      </div>
+    `);
+  });
+
+  /* پیش‌فرض‌گذاری خودکار برای راحتی */
+  document.querySelectorAll('select[data-kind="meal"]').forEach(sel=>{
+    if (sel.value === "") { sel.selectedIndex = 1; sel.classList.remove('placeholder'); }
+  });
+  document.querySelectorAll('select[data-kind="side"]').forEach(sel=>{
+    if (sel.value === "") { sel.selectedIndex = 1; sel.classList.remove('placeholder'); }
+  });
+
+  updateSubmitEnabled();
+}
+
+/* ---------- SUBMIT ---------- */
 async function submitOrder(){
   const code = localStorage.getItem('currentUser');
   const name = localStorage.getItem('currentUserName');
@@ -286,8 +270,9 @@ async function submitOrder(){
 
   if(missing.length){
     document.getElementById('orderMsg').textContent = "";
-    document.getElementById('progressMsg').style.display='block';
-    document.getElementById('progressMsg').textContent = "این موارد انتخاب نشده‌اند: " + missing.join(" ، ");
+    const p = document.getElementById('progressMsg');
+    p.style.display='block';
+    p.textContent = "این موارد انتخاب نشده‌اند: " + missing.join(" ، ");
     return;
   }
 
@@ -299,9 +284,7 @@ async function submitOrder(){
 
   try{
     const res = await fetch(SHEET_URL, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(rows)
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(rows)
     });
     const data = await res.json();
     if(data.ok){
@@ -319,7 +302,7 @@ async function submitOrder(){
   }
 }
 
-/* ---------- ADMIN: خواندن شیت و خروجی CSV ---------- */
+/* ---------- ADMIN: load & CSV from sheet ---------- */
 async function loadSheet(){
   try{
     const url = `${SHEET_URL}?from=1404/06/08&to=1404/06/21`;
@@ -355,7 +338,6 @@ function exportWeekCSVFromSheet(){
   });
   downloadCSV("\uFEFF"+csv,"orders_1404-06-08_1404-06-21.csv");
 }
-
 function exportDailyByFloorCSVFromSheet(){
   const tbody=document.querySelector('#ordersTable tbody');
   if(!tbody.children.length){ alert('اول «خواندن سفارش‌ها» را بزنید.'); return; }
@@ -380,12 +362,25 @@ function exportDailyByFloorCSVFromSheet(){
     downloadCSV("\uFEFF"+parts.join("\n"),`orders_${day}_by_floor.csv`);
   });
 }
-
 function downloadCSV(text, filename){
   const blob=new Blob([text],{type:"text/csv;charset=utf-8"});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),0);
 }
+
+/* ---------- load menu.json ---------- */
+async function loadMenu(){
+  try{
+    const res = await fetch(MENU_URL + "?v=" + Date.now());
+    const data = await res.json();
+    menuDays = data.days || [];
+    sides = (data.sides || ["نوشابه","دوغ","سالاد"]).filter(s=>s!=="ماست"); // ماست حذف شد
+    document.getElementById('menuStatus').textContent = 'منو بارگذاری شد ✅';
+  }catch(e){
+    document.getElementById('menuStatus').textContent = 'خطا در بارگذاری منو ❌';
+  }
+}
+loadMenu();
 </script>
 </body>
 </html>
